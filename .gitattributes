@@ -1,0 +1,11 @@
+# Keep line endings stable so the generated docs/ build is identical on
+# Windows and on CI.
+*.py   text eol=lf
+*.html text eol=lf
+*.md   text eol=lf
+*.yml  text eol=lf
+*.txt  text eol=lf
+Procfile text eol=lf
+
+# Windows launcher needs CRLF.
+*.bat  text eol=crlf

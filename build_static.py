@@ -386,10 +386,12 @@ def main():
     )
 
     OUT_DIR.mkdir(exist_ok=True)
-    (OUT_DIR / "index.html").write_text(html, encoding="utf-8")
+    # Always write LF, so the build is byte-identical on Windows and Linux and
+    # CI can meaningfully diff it.
+    (OUT_DIR / "index.html").write_text(html, encoding="utf-8", newline="\n")
     shutil.copy2(ENGINE, OUT_DIR / "schedule_backend.py")
     # Stop GitHub Pages running the output through Jekyll.
-    (OUT_DIR / ".nojekyll").write_text("", encoding="utf-8")
+    (OUT_DIR / ".nojekyll").write_text("", encoding="utf-8", newline="\n")
 
     print(f"Built {OUT_DIR / 'index.html'} ({len(html):,} bytes)")
     print(f"Copied {ENGINE.name} -> {OUT_DIR / 'schedule_backend.py'}")
