@@ -1,0 +1,2034 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Class Schedule Generator</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap');
+
+        :root {
+            --bg-0: #070b14;
+            --bg-1: #0d1422;
+            --panel: #101a2d;
+            --panel-soft: #141f36;
+            --panel-hover: #17253f;
+            --line: #283654;
+            --line-soft: #1e2a42;
+            --text: #edf2ff;
+            --muted: #98a9cc;
+            --accent: #ff4b6e;
+            --accent-2: #4d7cff;
+            --good: #25d08c;
+            --warn: #f59e0b;
+            --danger: #ef4444;
+            --radius-lg: 18px;
+            --radius-md: 12px;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            min-height: 100%;
+        }
+
+        body {
+            font-family: 'Manrope', 'Avenir Next', 'Helvetica Neue', sans-serif;
+            color: var(--text);
+            background:
+                radial-gradient(1200px 500px at -10% -10%, #1e3a8a55 0%, transparent 70%),
+                radial-gradient(900px 500px at 110% 0%, #be123c55 0%, transparent 68%),
+                linear-gradient(160deg, var(--bg-0) 0%, var(--bg-1) 55%, #121a2f 100%);
+            padding: 24px;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: 0 auto;
+            background: linear-gradient(150deg, #0d1628ee 0%, #101a2dee 100%);
+            border: 1px solid #ffffff1f;
+            border-radius: 28px;
+            box-shadow: 0 26px 80px rgba(0, 0, 0, 0.45);
+            backdrop-filter: blur(14px);
+            padding: 36px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2), #06b6d4);
+        }
+
+        h1 {
+            font-family: 'Space Grotesk', 'Avenir Next', sans-serif;
+            letter-spacing: 0.02em;
+            color: #f9fbff;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: clamp(2rem, 3.6vw, 2.8rem);
+            text-shadow: 0 10px 34px rgba(77, 124, 255, 0.3);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--muted);
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+
+        .app-nav {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 14px;
+            flex-wrap: wrap;
+        }
+
+        .account-chip {
+            padding: 7px 12px;
+            border-radius: 999px;
+            border: 1px solid #33496f;
+            background: #0c162b;
+            color: #cddbfd;
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .nav-link {
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+            padding: 8px 12px;
+            border-radius: 10px;
+            border: 1px solid #33496f;
+            background: #0c162b;
+            color: #dbe7ff;
+            font-size: 0.84rem;
+            font-weight: 700;
+        }
+
+        .nav-link:hover {
+            background: #12203a;
+            border-color: #45619a;
+        }
+
+        .section {
+            margin-bottom: 22px;
+            padding: 22px;
+            background: linear-gradient(165deg, #131f35d8 0%, #101a2ed8 100%);
+            border: 1px solid var(--line-soft);
+            border-radius: var(--radius-lg);
+            box-shadow: inset 0 1px 0 #ffffff14;
+            transition: transform 220ms ease, border-color 220ms ease, background 220ms ease;
+            animation: slideIn 450ms ease both;
+        }
+
+        .section:nth-of-type(2) { animation-delay: 45ms; }
+        .section:nth-of-type(3) { animation-delay: 90ms; }
+        .section:nth-of-type(4) { animation-delay: 135ms; }
+        .section:nth-of-type(5) { animation-delay: 180ms; }
+
+        .section:hover {
+            transform: translateY(-2px);
+            background: linear-gradient(165deg, #16243ed8 0%, #13203ad8 100%);
+            border-color: #3a4d78;
+        }
+
+        .section-title {
+            font-family: 'Space Grotesk', 'Avenir Next', sans-serif;
+            font-size: clamp(1.1rem, 2vw, 1.35rem);
+            color: #f3f6ff;
+            margin-bottom: 16px;
+            font-weight: 700;
+            letter-spacing: 0.01em;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #d3def6;
+            font-size: 0.92rem;
+            font-weight: 600;
+            letter-spacing: 0.015em;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px 14px;
+            border: 1px solid #314162;
+            border-radius: var(--radius-md);
+            background: #0d1627;
+            color: var(--text);
+            font-family: inherit;
+            font-size: 0.95rem;
+            transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+        }
+
+        input::placeholder,
+        textarea::placeholder {
+            color: #7f92b9;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #6a8bff;
+            box-shadow: 0 0 0 3px #4d7cff33;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 14px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .checkbox-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            background: #0b1424;
+            border: 1px solid #273552;
+            transition: border-color 180ms ease, background 180ms ease;
+        }
+
+        .checkbox-item:hover {
+            border-color: #3f5682;
+            background: #111d33;
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            accent-color: #6d8cff;
+        }
+
+        .checkbox-item label {
+            margin: 0;
+            color: #cfdaf2;
+            font-weight: 500;
+            font-size: 0.86rem;
+        }
+
+        button {
+            background: linear-gradient(120deg, #ff4b6e 0%, #ff7b5e 55%, #ff9f40 100%);
+            color: #fff;
+            padding: 13px 28px;
+            border: none;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+            cursor: pointer;
+            transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+            width: 100%;
+            margin-top: 20px;
+            box-shadow: 0 12px 24px #ff5f5f3d;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 16px 30px #ff5f5f55;
+            filter: saturate(1.1);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .add-btn, .remove-btn {
+            width: auto;
+            margin-top: 10px;
+            padding: 9px 14px;
+            font-size: 0.84rem;
+            border-radius: 10px;
+            box-shadow: none;
+        }
+
+        .add-btn {
+            background: linear-gradient(120deg, #3b82f6 0%, #6366f1 100%);
+        }
+
+        .remove-btn {
+            background: linear-gradient(120deg, #ef4444 0%, #fb7185 100%);
+        }
+
+        #results {
+            margin-top: 26px;
+            display: none;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 18px;
+        }
+
+        .download-btn {
+            background: linear-gradient(120deg, #1d4ed8 0%, #3b82f6 100%);
+            margin-top: 0;
+            width: auto;
+            box-shadow: 0 12px 24px #3b82f640;
+        }
+
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 14px;
+            margin-bottom: 24px;
+        }
+
+        .summary-card {
+            background: linear-gradient(160deg, #0f192d 0%, #12203a 100%);
+            border: 1px solid #273656;
+            border-radius: 14px;
+            padding: 16px;
+            box-shadow: inset 0 1px 0 #ffffff12;
+        }
+
+        .summary-card h3 {
+            color: #dbe6ff;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+            font-weight: 700;
+        }
+
+        .summary-card .value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #f5f8ff;
+            line-height: 1.1;
+        }
+
+        .summary-card .label {
+            color: var(--muted);
+            font-size: 0.84rem;
+            margin-top: 4px;
+        }
+
+        .save-schedule-panel {
+            margin-bottom: 16px;
+            border: 1px solid #2a3a5f;
+            border-radius: 12px;
+            padding: 14px;
+            background: linear-gradient(160deg, #0d1729 0%, #111d34 100%);
+        }
+
+        .save-schedule-grid {
+            display: grid;
+            grid-template-columns: minmax(230px, 1fr) auto;
+            gap: 10px;
+            align-items: end;
+        }
+
+        .save-btn {
+            width: auto;
+            margin-top: 0;
+            height: 44px;
+            padding: 10px 16px;
+            box-shadow: none;
+            background: linear-gradient(120deg, #1d4ed8 0%, #3b82f6 100%);
+        }
+
+        .save-status {
+            margin-top: 8px;
+            min-height: 18px;
+            font-size: 0.84rem;
+            color: var(--muted);
+        }
+
+        .save-status.success {
+            color: #9df7d0;
+        }
+
+        .save-status.error {
+            color: #ffb9c6;
+        }
+
+        .summary-card.requirement-card {
+            transition: border-color 180ms ease, box-shadow 180ms ease;
+        }
+
+        .summary-card.requirement-card.met {
+            border-color: #1f6f55;
+            box-shadow:
+                0 0 0 1px #25d08c33 inset,
+                0 0 18px #25d08c26;
+        }
+
+        .summary-card.requirement-card.unmet {
+            border-color: #8b1f36;
+            box-shadow:
+                0 0 0 1px #ef444433 inset,
+                0 0 18px #ef444422;
+        }
+
+        .schedule-table {
+            width: 100%;
+            max-height: 72vh;
+            overflow: auto;
+            border: 1px solid #2a3a5f;
+            border-radius: 14px;
+            background: #0b1324;
+            box-shadow: inset 0 1px 0 #ffffff10;
+        }
+
+        table {
+            width: 100%;
+            min-width: 980px;
+            border-collapse: separate;
+            border-spacing: 0;
+            table-layout: fixed;
+            background: transparent;
+        }
+
+        th, td {
+            padding: 14px 12px;
+            text-align: left;
+            border-bottom: 1px solid #22304d;
+            vertical-align: top;
+            white-space: normal;
+            word-break: break-word;
+            line-height: 1.35;
+        }
+
+        th {
+            background: linear-gradient(120deg, #1f2f52 0%, #172746 100%);
+            color: #f0f4ff;
+            font-family: 'Space Grotesk', 'Avenir Next', sans-serif;
+            font-weight: 700;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+        }
+
+        tbody tr:nth-child(even) td {
+            background: #0f1a30;
+        }
+
+        tbody tr:nth-child(odd) td {
+            background: #0c1629;
+        }
+
+        tbody tr:hover td {
+            background: #14213a;
+        }
+
+        th:first-child,
+        td.period-col {
+            width: 220px;
+            min-width: 220px;
+            position: sticky;
+            left: 0;
+            z-index: 1;
+            box-shadow: 1px 0 0 #22304d;
+        }
+
+        td.period-col {
+            background: #0c162b;
+        }
+
+        .period-name {
+            font-family: 'Space Grotesk', 'Avenir Next', sans-serif;
+            font-size: 1.01rem;
+            font-weight: 700;
+            color: #eef3ff;
+            margin-bottom: 3px;
+        }
+
+        .period-time {
+            font-size: 0.9rem;
+            color: #90a3c8;
+            font-weight: 600;
+        }
+
+        .schedule-block {
+            display: flex;
+            width: fit-content;
+            max-width: 100%;
+            padding: 4px 10px;
+            margin-bottom: 6px;
+            border-radius: 999px;
+            border: 1px solid var(--chip-border, #3a4d75);
+            background: var(--chip-bg, #1a2741);
+            box-shadow:
+                inset 0 1px 0 #ffffff22,
+                0 0 12px var(--chip-glow, #00000000);
+            color: var(--chip-text, #e8efff);
+            font-size: 0.84rem;
+            font-weight: 700;
+            line-height: 1.25;
+        }
+
+        .schedule-block:last-child {
+            margin-bottom: 0;
+        }
+
+        .break-cell {
+            color: #8ea3ca;
+            text-align: left;
+        }
+
+        .break-text {
+            color: #8ea3ca;
+            font-style: italic;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+
+        .free-cell {
+            color: #9ab2db;
+        }
+
+        .error-cell {
+            color: #ff7a7a;
+            font-weight: 700;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 34px;
+            display: none;
+            color: var(--muted);
+        }
+
+        .spinner {
+            border: 4px solid #ffffff18;
+            border-top: 4px solid #5f86ff;
+            border-radius: 50%;
+            width: 42px;
+            height: 42px;
+            animation: spin 0.9s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .error {
+            background: #44131f;
+            color: #ffb9c6;
+            border: 1px solid #7f1d32;
+            padding: 14px;
+            border-radius: 10px;
+            margin-top: 16px;
+            display: none;
+            /* Validation errors arrive as a multi-line bulleted list. */
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+
+        .field-invalid {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px #ef444433 !important;
+        }
+
+        .field-error {
+            display: none;
+            margin-top: 6px;
+            color: #ff9fb1;
+            font-size: 0.8rem;
+            line-height: 1.25;
+        }
+
+        .success {
+            background: #11342a;
+            color: #9df7d0;
+            border: 1px solid #1f6f55;
+            padding: 14px;
+            border-radius: 10px;
+            margin-top: 16px;
+        }
+
+        .help-text {
+            font-size: 0.84rem;
+            color: var(--muted);
+            margin-top: 6px;
+            line-height: 1.35;
+        }
+
+        .seed-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .seed-row input {
+            flex: 1 1 220px;
+            min-width: 0;
+        }
+
+        .seed-btn {
+            margin: 0;
+            white-space: nowrap;
+        }
+
+        .notice {
+            padding: 13px 16px;
+            border-radius: 10px;
+            margin-bottom: 14px;
+            font-size: 0.9rem;
+            line-height: 1.45;
+        }
+
+        .notice strong {
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .notice ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .notice li {
+            margin-top: 3px;
+        }
+
+        .notice.short {
+            background: #44131f;
+            color: #ffb9c6;
+            border: 1px solid #7f1d32;
+        }
+
+        .notice.warn {
+            background: #3d2f10;
+            color: #f5d999;
+            border: 1px solid #7a5c17;
+        }
+
+        .prefilled-item,
+        .subject-req-item {
+            background: linear-gradient(165deg, #0d1628 0%, #101a30 100%);
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #273656;
+        }
+
+        .prefilled-item .grid {
+            margin-bottom: 10px;
+        }
+
+        .prefilled-item .prefilled-day,
+        .prefilled-item .prefilled-period,
+        .prefilled-item .prefilled-activity {
+            height: 38px;
+            padding: 8px 12px;
+        }
+
+        .subject-req-item input[type="number"]::-webkit-outer-spin-button,
+        .subject-req-item input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        .subject-req-item input[type="number"] {
+            -moz-appearance: textfield;
+            appearance: textfield;
+        }
+
+        .subject-limit-picker {
+            margin-top: 16px;
+            padding-top: 14px;
+            border-top: 1px solid #273656;
+        }
+
+        .time-picker-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            margin-top: 10px;
+            max-width: 420px;
+        }
+
+        .picker-field label {
+            font-size: 0.82rem;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .picker-field select {
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .day-count-group {
+            padding: 14px;
+            border: 1px solid #2a3a5f;
+            border-radius: 12px;
+            background: linear-gradient(160deg, #0d1729 0%, #111d34 100%);
+        }
+
+        .day-count-group label {
+            margin-bottom: 10px;
+        }
+
+        .day-count-options {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+            align-items: center;
+        }
+
+        .day-count-option {
+            border: 1px solid #32466f;
+            border-radius: 999px;
+            background: #0a1425;
+            color: #d8e5ff;
+            padding: 9px 24px;
+            margin: 0;
+            width: auto;
+            min-width: 66px;
+            height: 42px;
+            flex: 0 0 auto;
+            font-size: 0.88rem;
+            font-weight: 700;
+            line-height: 1;
+            box-shadow: none;
+            filter: none;
+            transition: all 160ms ease;
+        }
+
+        .day-count-option:hover {
+            border-color: #4e6ea6;
+            background: #132440;
+            box-shadow: none;
+            transform: translateY(-1px);
+            filter: none;
+        }
+
+        .day-count-option.active {
+            border-color: #6a8bff;
+            background: linear-gradient(120deg, #1d4ed8 0%, #3b82f6 100%);
+            color: #f7faff;
+            box-shadow: 0 0 0 2px #6a8bff33;
+        }
+
+        .day-count-inline {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .day-count-inline label {
+            margin: 0;
+            white-space: nowrap;
+            min-width: 220px;
+        }
+
+        *::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: #0a1120;
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background: #334769;
+            border-radius: 999px;
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background: #425b87;
+        }
+
+        @media (max-width: 920px) {
+            body {
+                padding: 14px;
+            }
+
+            .container {
+                padding: 22px;
+                border-radius: 20px;
+            }
+
+            .section {
+                padding: 16px;
+            }
+
+            .results-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .download-btn {
+                width: 100%;
+            }
+
+            .day-count-inline {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .day-count-inline label {
+                min-width: 0;
+            }
+
+            .save-schedule-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .save-btn {
+                width: 100%;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+        /* ---- static build additions ---- */
+        .nav-button {
+            background: none;
+            border: none;
+            font: inherit;
+            cursor: pointer;
+        }
+
+        .browser-note {
+            background: #10243d;
+            border: 1px solid #24487a;
+            color: #b9d4f5;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 18px;
+            font-size: 0.88rem;
+            line-height: 1.45;
+        }
+
+        .engine-status {
+            display: none;
+            background: #10243d;
+            border: 1px solid #24487a;
+            color: #b9d4f5;
+            padding: 12px 16px;
+            border-radius: 10px;
+            margin-bottom: 18px;
+            font-size: 0.9rem;
+        }
+
+        .saved-panel {
+            display: none;
+            background: linear-gradient(165deg, #0d1628 0%, #101a30 100%);
+            border: 1px solid #273656;
+            border-radius: 14px;
+            padding: 20px;
+            margin-bottom: 22px;
+        }
+
+        .saved-panel h2 {
+            margin: 0 0 6px;
+            font-size: 1.15rem;
+        }
+
+        .saved-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 11px 0;
+            border-top: 1px solid #273656;
+        }
+
+        .saved-row .saved-name {
+            flex: 1 1 200px;
+            font-weight: 600;
+        }
+
+        .saved-row .saved-date {
+            color: var(--muted);
+            font-size: 0.82rem;
+        }
+
+        .saved-empty {
+            color: var(--muted);
+            padding-top: 12px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="app-nav">
+            <button type="button" class="nav-link nav-button" onclick="openSavedPanel()">Saved Schedules</button>
+        </div>
+        <h1>Miss K's Class Schedule Generator</h1>
+        <p class="subtitle">Create optimized class schedules with custom requirements</p>
+        
+        <form id="scheduleForm">
+            <!-- Basic Configuration -->
+            <div class="section">
+                <h2 class="section-title">Basic Configuration</h2>
+
+                <input type="hidden" id="numDays" value="6">
+                <div class="form-group day-count-group">
+                    <div class="day-count-inline">
+                        <label for="dayCountOptions">Number of Days in Cycle:</label>
+                        <div id="dayCountOptions" class="day-count-options" role="radiogroup" aria-label="Number of Days in Cycle"></div>
+                    </div>
+                    <p class="help-text">Choose between 1 and 12 days in your schedule cycle.</p>
+                </div>
+            </div>
+            
+            <!-- Pre-filled Activities -->
+            <div class="section">
+                <h2 class="section-title">Pre-filled Activities</h2>
+                <p class="help-text" style="margin-bottom: 15px;">Activities that must happen at specific times (e.g., PE on Day 1 Period 2)</p>
+                
+                <div id="prefilledContainer"></div>
+                <button type="button" class="add-btn" onclick="addPrefilled()">+ Add Pre-filled Activity</button>
+            </div>
+            
+            <!-- Subject Requirements -->
+            <div class="section">
+                <h2 class="section-title">Subject Requirements</h2>
+                <p class="help-text" style="margin-bottom: 15px;">Define minimum time requirements for each subject</p>
+                
+                <div id="subjectsContainer"></div>
+                <button type="button" class="add-btn" onclick="addSubject()">+ Add Subject</button>
+                
+                <div class="subject-limit-picker">
+                    <label>Max Minutes Per Subject Per Day:</label>
+                    <div class="time-picker-grid">
+                        <div class="picker-field">
+                            <label for="maxPerDayHours">Hours</label>
+                            <select id="maxPerDayHours" required></select>
+                        </div>
+                        <div class="picker-field">
+                            <label for="maxPerDayMinutes">Minutes</label>
+                            <select id="maxPerDayMinutes" required></select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Priority Settings -->
+            <div class="section">
+                <h2 class="section-title">Priority Settings</h2>
+                
+                <div class="form-group">
+                    <label>Morning Periods:</label>
+                    <div id="morningPeriodsContainer" class="checkbox-group"></div>
+                    <p class="help-text">Select which periods are considered "morning"</p>
+                </div>
+                
+                <div class="form-group">
+                    <label>Afternoon Periods:</label>
+                    <div id="afternoonPeriodsContainer" class="checkbox-group"></div>
+                    <p class="help-text">Select which periods are considered "afternoon"</p>
+                </div>
+                
+                <div class="form-group">
+                    <label>Morning Priority Subjects:</label>
+                    <div id="morningSubjectsContainer" class="checkbox-group"></div>
+                    <p class="help-text">Subjects to prioritize in the morning (e.g., ELAL, Math)</p>
+                </div>
+                
+                <div class="form-group">
+                    <label>Afternoon Priority Subjects:</label>
+                    <div id="afternoonSubjectsContainer" class="checkbox-group"></div>
+                    <p class="help-text">Subjects to prioritize in the afternoon</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="randomSeed">Variation Number (optional):</label>
+                    <div class="seed-row">
+                        <input type="number" id="randomSeed" min="1" max="999999" placeholder="Leave empty for the standard schedule">
+                        <button type="button" class="add-btn seed-btn" onclick="shuffleSeed()">Try a different layout</button>
+                    </div>
+                    <p class="help-text">Same number always gives the same schedule. Change it to get a different arrangement that still meets every requirement.</p>
+                </div>
+            </div>
+
+            <button type="submit">Generate Schedule</button>
+        </form>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 20px; font-weight: 700;">Generating your optimized schedule...</p>
+        </div>
+        
+        <div class="error" id="error"></div>
+        
+        <div id="results">
+            <div class="section">
+                <div class="results-header">
+                    <h2 class="section-title">Schedule Generated</h2>
+                    <button class="download-btn" onclick="downloadCSV()">Download CSV</button>
+                </div>
+                
+                <div id="scheduleNotices"></div>
+
+                <div class="summary-grid" id="summaryContainer"></div>
+
+                <div class="save-schedule-panel">
+                    <div class="save-schedule-grid">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="scheduleName">Schedule Name</label>
+                            <input type="text" id="scheduleName" placeholder="Schedule name">
+                        </div>
+                        <button type="button" class="save-btn" id="saveScheduleButton" onclick="saveSchedule()">Save Schedule</button>
+                    </div>
+                    <p id="saveScheduleStatus" class="save-status"></p>
+                </div>
+                
+                <div class="schedule-table">
+                    <div id="scheduleTableContainer"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let generatedCSV = '';
+        let generatedSummary = null;
+        let generatedConfig = null;
+        let periodsList = [];
+        let subjectsList = [];
+        const DAY_COUNT_OPTIONS = Array.from({length: 12}, (_, i) => i + 1);
+        const PERIOD_OPTIONS = [
+            {label: 'Period 1', value: 'period_1'},
+            {label: 'Period 2', value: 'period_2'},
+            {label: 'Period 3', value: 'period_3'},
+            {label: 'Period 4', value: 'period_4'},
+            {label: 'Period 5', value: 'period_5'},
+            {label: 'Period 6', value: 'period_6'},
+            {label: 'Period 7', value: 'period_7'}
+        ];
+        const DEFAULT_PERIODS = [
+            {name: 'period_1', start: '8:41', end: '9:24', duration: 43, ignored: false},
+            {name: 'period_2', start: '9:24', end: '10:13', duration: 49, ignored: false},
+            {name: 'snack', start: '10:13', end: '10:18', duration: 5, ignored: true},
+            {name: 'period_3', start: '10:18', end: '11:08', duration: 50, ignored: false},
+            {name: 'period_4', start: '11:08', end: '11:57', duration: 49, ignored: false},
+            {name: 'lunch', start: '11:57', end: '12:41', duration: 44, ignored: true},
+            {name: 'period_5', start: '12:41', end: '13:30', duration: 49, ignored: false},
+            {name: 'recess', start: '13:30', end: '13:50', duration: 20, ignored: true},
+            {name: 'period_6', start: '13:50', end: '14:20', duration: 30, ignored: false},
+            {name: 'period_7', start: '14:20', end: '15:10', duration: 50, ignored: false}
+        ];
+        
+        // Initialize default configuration
+        window.onload = function() {
+            initializeDefaults();
+        };
+        
+        function initializeDefaults() {
+            periodsList = DEFAULT_PERIODS.map(period => ({...period}));
+            renderDayCountSelector();
+            setNumDays(getNumDays());
+            initializeMaxPerDayPicker(120);
+            
+            // Add default subjects
+            const defaultSubjects = [
+                {name: 'ELAL', minBlock: 10, minDay: 20, minCycle: 576},
+                {name: 'Math', minBlock: 20, minDay: 20, minCycle: 288},
+                {name: 'Science', minBlock: 10, minDay: 10, minCycle: 192},
+                {name: 'Social', minBlock: 10, minDay: 10, minCycle: 192},
+                {name: 'Religion', minBlock: 5, minDay: 20, minCycle: 192}
+            ];
+            
+            subjectsList = defaultSubjects;
+            renderSubjects();
+            
+            // Add default pre-filled activities
+            addPrefilled('Day 1', 'period_2', 'PE');
+            addPrefilled('Day 2', 'period_7', 'Music');
+            addPrefilled('Day 4', 'period_4', 'Music');
+            addPrefilled('Day 5', 'period_2', 'DPA');
+            addPrefilled('Day 6', 'period_7', 'Learning Commons');
+            
+            updatePriorityCheckboxes();
+            loadDefaultScheduleName();
+        }
+
+        function getNumDays() {
+            const value = parseInt(document.getElementById('numDays').value, 10);
+            if (Number.isNaN(value)) return 6;
+            return Math.min(12, Math.max(1, value));
+        }
+
+        function buildDayNames() {
+            const numDays = getNumDays();
+            return Array.from({length: numDays}, (_, i) => `Day ${i + 1}`);
+        }
+
+        function renderDayCountSelector() {
+            const container = document.getElementById('dayCountOptions');
+            if (!container) return;
+
+            container.innerHTML = DAY_COUNT_OPTIONS.map(count => `
+                <button
+                    type="button"
+                    class="day-count-option"
+                    data-days="${count}"
+                    role="radio"
+                    aria-checked="false"
+                    onclick="setNumDays(${count})"
+                >${count}</button>
+            `).join('');
+        }
+
+        function setNumDays(value) {
+            const safeValue = Math.min(12, Math.max(1, Number(value) || 6));
+            const input = document.getElementById('numDays');
+            if (input) input.value = String(safeValue);
+
+            document.querySelectorAll('.day-count-option').forEach(button => {
+                const isActive = Number(button.dataset.days) === safeValue;
+                button.classList.toggle('active', isActive);
+                button.setAttribute('aria-checked', isActive ? 'true' : 'false');
+            });
+
+            onNumDaysChange();
+        }
+
+        function buildDayOptions(selectedDay = '') {
+            const dayNames = buildDayNames();
+            return dayNames.map(day => 
+                `<option value="${day}" ${selectedDay === day ? 'selected' : ''}>${day}</option>`
+            ).join('');
+        }
+
+        function formatPeriodLabel(periodName) {
+            return (periodName || '')
+                .split('_')
+                .map(part => part ? part.charAt(0).toUpperCase() + part.slice(1) : part)
+                .join(' ');
+        }
+
+        function initializeMaxPerDayPicker(defaultMinutes = 120) {
+            const hourSelect = document.getElementById('maxPerDayHours');
+            const minuteSelect = document.getElementById('maxPerDayMinutes');
+            if (!hourSelect || !minuteSelect) return;
+
+            hourSelect.innerHTML = Array.from({length: 9}, (_, hours) => {
+                const label = `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+                return `<option value="${hours}">${label}</option>`;
+            }).join('');
+
+            minuteSelect.innerHTML = Array.from({length: 12}, (_, index) => {
+                const minutes = index * 5;
+                const label = `${String(minutes).padStart(2, '0')} min`;
+                return `<option value="${minutes}">${label}</option>`;
+            }).join('');
+
+            const safeDefault = Math.max(0, defaultMinutes);
+            const defaultHours = Math.min(8, Math.floor(safeDefault / 60));
+            const rawMinutes = safeDefault % 60;
+            const roundedMinutes = Math.round(rawMinutes / 5) * 5;
+            const defaultPickerMinutes = roundedMinutes === 60 ? 55 : roundedMinutes;
+
+            hourSelect.value = String(defaultHours);
+            minuteSelect.value = String(defaultPickerMinutes);
+        }
+
+        function getMaxPerDayMinutes() {
+            const hours = parseInt(document.getElementById('maxPerDayHours').value, 10);
+            const minutes = parseInt(document.getElementById('maxPerDayMinutes').value, 10);
+            const safeHours = Number.isNaN(hours) ? 2 : hours;
+            const safeMinutes = Number.isNaN(minutes) ? 0 : minutes;
+            return safeHours * 60 + safeMinutes;
+        }
+
+        function refreshPrefilledDayOptions() {
+            const dayNames = buildDayNames();
+            const dayOptions = dayNames.map(day => `<option value="${day}">${day}</option>`).join('');
+            document.querySelectorAll('.prefilled-day').forEach(select => {
+                const previousValue = select.value;
+                select.innerHTML = dayOptions;
+                if (dayNames.includes(previousValue)) {
+                    select.value = previousValue;
+                }
+            });
+        }
+
+        function onNumDaysChange() {
+            refreshPrefilledDayOptions();
+        }
+        
+        function renderSubjects() {
+            const container = document.getElementById('subjectsContainer');
+            container.innerHTML = '';
+            
+            subjectsList.forEach((subject, index) => {
+                const div = document.createElement('div');
+                div.className = 'subject-req-item';
+                div.innerHTML = `
+                    <div class="grid">
+                        <div>
+                            <label>Subject Name:</label>
+                            <input type="text" class="subject-name" value="${subject.name}" onchange="updateSubject(${index}, 'name', this.value)" required>
+                        </div>
+                        <div>
+                            <label>Min per Block (min):</label>
+                            <input type="number" class="subject-min-block" value="${subject.minBlock}" onchange="updateSubject(${index}, 'minBlock', parseInt(this.value, 10))" onblur="validateSubjectRequirementInput(this)" required>
+                            <p class="field-error"></p>
+                        </div>
+                        <div>
+                            <label>Min per Day (min):</label>
+                            <input type="number" class="subject-min-day" value="${subject.minDay}" onchange="updateSubject(${index}, 'minDay', parseInt(this.value, 10))" onblur="validateSubjectRequirementInput(this)" required>
+                            <p class="field-error"></p>
+                        </div>
+                        <div>
+                            <label>Min per Cycle (min):</label>
+                            <input type="number" class="subject-min-cycle" value="${subject.minCycle}" onchange="updateSubject(${index}, 'minCycle', parseInt(this.value, 10))" onblur="validateSubjectRequirementInput(this)" required>
+                            <p class="field-error"></p>
+                        </div>
+                    </div>
+                    <button type="button" class="remove-btn" onclick="removeSubject(${index})">Remove</button>
+                `;
+                container.appendChild(div);
+            });
+            
+            updatePriorityCheckboxes();
+        }
+        
+        function addSubject() {
+            subjectsList.push({
+                name: `Subject ${subjectsList.length + 1}`,
+                minBlock: 10,
+                minDay: 10,
+                minCycle: 100
+            });
+            renderSubjects();
+        }
+        
+        function removeSubject(index) {
+            subjectsList.splice(index, 1);
+            renderSubjects();
+        }
+        
+        function updateSubject(index, field, value) {
+            subjectsList[index][field] = value;
+            updatePriorityCheckboxes();
+        }
+
+        function setInlineFieldError(inputEl, message = '') {
+            if (!inputEl) return;
+            const errorEl = inputEl.parentElement?.querySelector('.field-error');
+            if (!errorEl) return;
+
+            if (message) {
+                inputEl.classList.add('field-invalid');
+                errorEl.textContent = message;
+                errorEl.style.display = 'block';
+            } else {
+                inputEl.classList.remove('field-invalid');
+                errorEl.textContent = '';
+                errorEl.style.display = 'none';
+            }
+        }
+
+        function getNumericFieldLabel(inputEl) {
+            if (inputEl.classList.contains('subject-min-block')) return 'Min per Block';
+            if (inputEl.classList.contains('subject-min-day')) return 'Min per Day';
+            if (inputEl.classList.contains('subject-min-cycle')) return 'Min per Cycle';
+            return 'Value';
+        }
+
+        function validateSubjectRequirementInput(inputEl) {
+            if (!inputEl) return true;
+            const value = String(inputEl.value ?? '').trim();
+            const parsed = Number(value);
+            const subjectName = inputEl.closest('.subject-req-item')?.querySelector('.subject-name')?.value.trim() || 'Subject';
+            const label = getNumericFieldLabel(inputEl);
+
+            if (value === '' || !Number.isFinite(parsed)) {
+                setInlineFieldError(inputEl, `${subjectName}: ${label} must be a valid number.`);
+                return false;
+            }
+
+            setInlineFieldError(inputEl, '');
+            return true;
+        }
+
+        function validateSubjectRequirementInputs() {
+            const numericInputs = document.querySelectorAll(
+                '#subjectsContainer .subject-min-block, #subjectsContainer .subject-min-day, #subjectsContainer .subject-min-cycle'
+            );
+            let isValid = true;
+            numericInputs.forEach(inputEl => {
+                if (!validateSubjectRequirementInput(inputEl)) {
+                    isValid = false;
+                }
+            });
+            return isValid;
+        }
+        
+        function addPrefilled(day = '', period = '', activity = '') {
+            const container = document.getElementById('prefilledContainer');
+            const dayOptions = buildDayOptions(day);
+            const periodOptions = PERIOD_OPTIONS.map(option =>
+                `<option value="${option.value}" ${period === option.value ? 'selected' : ''}>${option.label}</option>`
+            ).join('');
+            
+            const div = document.createElement('div');
+            div.className = 'prefilled-item';
+            div.innerHTML = `
+                <div class="grid">
+                    <div>
+                        <label>Day:</label>
+                        <select class="prefilled-day" required>
+                            ${dayOptions}
+                        </select>
+                    </div>
+                    <div>
+                        <label>Period:</label>
+                        <select class="prefilled-period" required>
+                            ${periodOptions}
+                        </select>
+                    </div>
+                    <div>
+                        <label>Activity:</label>
+                        <input type="text" class="prefilled-activity" value="${activity}" placeholder="e.g., PE" required>
+                    </div>
+                </div>
+                <button type="button" class="remove-btn" onclick="this.parentElement.remove()">Remove</button>
+            `;
+            container.appendChild(div);
+        }
+        
+        function updatePriorityCheckboxes() {
+            const instructionalPeriods = periodsList.filter(p => !p.ignored);
+            
+            // Morning periods checkboxes
+            const morningContainer = document.getElementById('morningPeriodsContainer');
+            morningContainer.innerHTML = '';
+            instructionalPeriods.forEach(period => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                div.innerHTML = `
+                    <input type="checkbox" id="morning_${period.name}" value="${period.name}">
+                    <label for="morning_${period.name}">${formatPeriodLabel(period.name)}</label>
+                `;
+                morningContainer.appendChild(div);
+            });
+            
+            // Set default morning periods (first 4 instructional periods)
+            instructionalPeriods.slice(0, 4).forEach(period => {
+                const checkbox = document.getElementById(`morning_${period.name}`);
+                if (checkbox) checkbox.checked = true;
+            });
+            
+            // Afternoon periods checkboxes
+            const afternoonContainer = document.getElementById('afternoonPeriodsContainer');
+            afternoonContainer.innerHTML = '';
+            instructionalPeriods.forEach(period => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                div.innerHTML = `
+                    <input type="checkbox" id="afternoon_${period.name}" value="${period.name}">
+                    <label for="afternoon_${period.name}">${formatPeriodLabel(period.name)}</label>
+                `;
+                afternoonContainer.appendChild(div);
+            });
+            
+            // Set default afternoon periods (remaining instructional periods)
+            instructionalPeriods.slice(4).forEach(period => {
+                const checkbox = document.getElementById(`afternoon_${period.name}`);
+                if (checkbox) checkbox.checked = true;
+            });
+            
+            // Morning subject priorities
+            const morningSubjContainer = document.getElementById('morningSubjectsContainer');
+            morningSubjContainer.innerHTML = '';
+            subjectsList.forEach(subject => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                div.innerHTML = `
+                    <input type="checkbox" id="mornsubj_${subject.name}" value="${subject.name}">
+                    <label for="mornsubj_${subject.name}">${subject.name}</label>
+                `;
+                morningSubjContainer.appendChild(div);
+            });
+            
+            // Set default morning subjects (ELAL, Math if they exist)
+            ['ELAL', 'Math'].forEach(name => {
+                const checkbox = document.getElementById(`mornsubj_${name}`);
+                if (checkbox) checkbox.checked = true;
+            });
+            
+            // Afternoon subject priorities
+            const afternoonSubjContainer = document.getElementById('afternoonSubjectsContainer');
+            afternoonSubjContainer.innerHTML = '';
+            subjectsList.forEach(subject => {
+                const div = document.createElement('div');
+                div.className = 'checkbox-item';
+                div.innerHTML = `
+                    <input type="checkbox" id="aftsubj_${subject.name}" value="${subject.name}">
+                    <label for="aftsubj_${subject.name}">${subject.name}</label>
+                `;
+                afternoonSubjContainer.appendChild(div);
+            });
+        }
+        
+        document.getElementById('scheduleForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            document.getElementById('error').style.display = 'none';
+            if (!validateSubjectRequirementInputs()) {
+                return;
+            }
+            
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+            
+            try {
+                // Build configuration
+                const config = buildConfiguration();
+                generatedConfig = config;
+                
+                // Send to backend
+                const data = await generateLocally(config);
+                
+                if (data.success) {
+                    generatedCSV = data.csv;
+                    generatedSummary = data.summary;
+                    displayResults(data.csv, data.summary);
+                    await loadDefaultScheduleName();
+                    setSaveScheduleStatus('');
+                } else {
+                    throw new Error(data.error || 'Unknown error occurred');
+                }
+            } catch (error) {
+                document.getElementById('error').textContent = `Error: ${error.message}`;
+                document.getElementById('error').style.display = 'block';
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        });
+        
+        function buildConfiguration() {
+            const days = buildDayNames();
+            
+            // Build periods object
+            const periods = {};
+            const ignoredPeriods = [];
+            periodsList.forEach(p => {
+                periods[p.name] = [p.start, p.end, p.duration];
+                if (p.ignored) ignoredPeriods.push(p.name);
+            });
+            
+            // Build pre-filled
+            const preFilled = {};
+            // const prefilledItems = document.querySelectorAll('.prefilled-item');
+            const prefilledItems = document.querySelectorAll('#prefilledContainer .prefilled-item');
+            prefilledItems.forEach(item => {
+                const day = item.querySelector('.prefilled-day').value.trim();
+                const period = item.querySelector('.prefilled-period').value.trim();
+                const activity = item.querySelector('.prefilled-activity').value.trim();
+                
+                if (day && period && activity) {
+                    if (!preFilled[day]) preFilled[day] = [];
+                    preFilled[day].push([period, activity]);
+                }
+            });
+            
+            // Build subject requirements
+            const subjectRequirements = {};
+            subjectsList.forEach(s => {
+                subjectRequirements[s.name] = {
+                    min_per_block: s.minBlock,
+                    min_per_day: s.minDay,
+                    min_per_cycle: s.minCycle
+                };
+            });
+            
+            // Get morning/afternoon periods
+            const morningPeriods = Array.from(document.querySelectorAll('#morningPeriodsContainer input:checked'))
+                .map(cb => cb.value);
+            const afternoonPeriods = Array.from(document.querySelectorAll('#afternoonPeriodsContainer input:checked'))
+                .map(cb => cb.value);
+            
+            // Get morning/afternoon priority subjects
+            const morningSubjects = Array.from(document.querySelectorAll('#morningSubjectsContainer input:checked'))
+                .map(cb => cb.value);
+            const afternoonSubjects = Array.from(document.querySelectorAll('#afternoonSubjectsContainer input:checked'))
+                .map(cb => cb.value);
+            
+            // Optional variation number: same value always rebuilds the same schedule.
+            const seedInput = document.getElementById('randomSeed');
+            const seedRaw = seedInput ? seedInput.value.trim() : '';
+            const seedValue = seedRaw === '' ? null : parseInt(seedRaw, 10);
+
+            return {
+                periods: periods,
+                days: days,
+                pre_filled: preFilled,
+                subject_requirements: subjectRequirements,
+                max_per_day: getMaxPerDayMinutes(),
+                morning_periods: morningPeriods,
+                afternoon_periods: afternoonPeriods,
+                morning_priority_subjects: morningSubjects,
+                afternoon_priority_subjects: afternoonSubjects,
+                ignored_periods: ignoredPeriods,
+                random_seed: Number.isNaN(seedValue) ? null : seedValue
+            };
+        }
+
+        function shuffleSeed() {
+            const seedInput = document.getElementById('randomSeed');
+            if (!seedInput) return;
+            seedInput.value = String(Math.floor(Math.random() * 999999) + 1);
+            const form = document.getElementById('scheduleForm');
+            if (form) form.requestSubmit();
+        }
+
+        function renderScheduleNotices(summary) {
+            const container = document.getElementById('scheduleNotices');
+            if (!container) return;
+
+            const blocks = [];
+
+            if (summary.unmet_cycle && summary.unmet_cycle.length) {
+                const items = summary.unmet_cycle
+                    .map(u => `<li>${escapeHtml(u.subject)} is ${u.short_by} min short (${u.assigned} of ${u.required} min)</li>`)
+                    .join('');
+                blocks.push(
+                    `<div class="notice short"><strong>Some cycle minimums could not be met</strong><ul>${items}</ul></div>`
+                );
+            }
+
+            if (summary.unmet_daily && summary.unmet_daily.length) {
+                const shown = summary.unmet_daily.slice(0, 8);
+                const items = shown
+                    .map(u => `<li>${escapeHtml(u.day)}: ${escapeHtml(u.subject)} got ${u.assigned} of ${u.required} min</li>`)
+                    .join('');
+                const more = summary.unmet_daily.length > shown.length
+                    ? `<li>...and ${summary.unmet_daily.length - shown.length} more</li>`
+                    : '';
+                blocks.push(
+                    `<div class="notice short"><strong>Some daily minimums could not be met</strong><ul>${items}${more}</ul></div>`
+                );
+            }
+
+            if (summary.over_cap && summary.over_cap.length) {
+                const items = summary.over_cap
+                    .map(u => `<li>${escapeHtml(u.day)}: ${escapeHtml(u.subject)} has ${u.assigned} min, over the ${u.cap} min cap</li>`)
+                    .join('');
+                blocks.push(
+                    `<div class="notice short"><strong>Per-day limit exceeded</strong><ul>${items}</ul></div>`
+                );
+            }
+
+            if (summary.warnings && summary.warnings.length) {
+                const items = summary.warnings.map(w => `<li>${escapeHtml(w)}</li>`).join('');
+                blocks.push(
+                    `<div class="notice warn"><strong>Worth checking</strong><ul>${items}</ul></div>`
+                );
+            }
+
+            container.innerHTML = blocks.join('');
+        }
+        
+        function displayResults(csv, summary) {
+            // Surface anything the generator could not satisfy, plus warnings.
+            renderScheduleNotices(summary);
+
+            // Display summary cards
+            const summaryContainer = document.getElementById('summaryContainer');
+            summaryContainer.innerHTML = `
+                <div class="summary-card">
+                    <h3>Total Available Time</h3>
+                    <div class="value">${summary.total_available}</div>
+                    <div class="label">minutes</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Total Assigned</h3>
+                    <div class="value">${summary.total_assigned}</div>
+                    <div class="label">minutes</div>
+                </div>
+                <div class="summary-card">
+                    <h3>Free Time</h3>
+                    <div class="value">${summary.total_free}</div>
+                    <div class="label">minutes</div>
+                </div>
+            `;
+            
+            // Add subject totals
+            for (const [subject, total] of Object.entries(summary.subject_totals)) {
+                const required = summary.requirements[subject].min_per_cycle;
+                const isMet = total >= required;
+                const card = document.createElement('div');
+                card.className = `summary-card requirement-card ${isMet ? 'met' : 'unmet'}`;
+                card.innerHTML = `
+                    <h3>${subject}</h3>
+                    <div class="value">${total}</div>
+                    <div class="label">of ${required} min required</div>
+                `;
+                summaryContainer.appendChild(card);
+            }
+            
+            // Display CSV as table
+            const rows = parseCSV(csv);
+            if (!rows.length) {
+                throw new Error('Schedule output was empty.');
+            }
+            
+            const header = rows[0];
+            const bodyRows = rows.slice(1);
+            let tableHTML = '<table><thead><tr>';
+            
+            header.forEach((cell, index) => {
+                const className = index === 0 ? 'period-col' : '';
+                tableHTML += `<th class="${className}">${formatCellContent(cell, index, true)}</th>`;
+            });
+            
+            tableHTML += '</tr></thead><tbody>';
+            bodyRows.forEach(row => {
+                tableHTML += '<tr>';
+                row.forEach((cell, index) => {
+                    const className = getCellClass(cell, index);
+                    tableHTML += `<td class="${className}">${formatCellContent(cell, index, false)}</td>`;
+                });
+                tableHTML += '</tr>';
+            });
+            tableHTML += '</tbody></table>';
+            document.getElementById('scheduleTableContainer').innerHTML = tableHTML;
+            
+            // Show results
+            document.getElementById('results').style.display = 'block';
+            document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function setSaveScheduleStatus(message, type = '') {
+            const statusEl = document.getElementById('saveScheduleStatus');
+            statusEl.textContent = message;
+            statusEl.className = `save-status${type ? ` ${type}` : ''}`;
+        }
+
+        async function loadDefaultScheduleName() {
+            const nameInput = document.getElementById('scheduleName');
+            if (nameInput) nameInput.value = `Schedule ${readSaved().length + 1}`;
+        }
+
+        async function saveSchedule() {
+            if (!generatedCSV || !generatedSummary || !generatedConfig) {
+                setSaveScheduleStatus('Generate a schedule before saving.', 'error');
+                return;
+            }
+
+            const button = document.getElementById('saveScheduleButton');
+            const nameInput = document.getElementById('scheduleName');
+            const payload = {
+                name: nameInput.value.trim(),
+                csv: generatedCSV,
+                summary: generatedSummary,
+                config: generatedConfig
+            };
+
+            try {
+                button.disabled = true;
+                button.textContent = 'Saving...';
+
+                const entry = saveScheduleLocally(
+                    payload.name, payload.csv, payload.summary, payload.config
+                );
+
+                nameInput.value = entry.name;
+                setSaveScheduleStatus(`Saved as "${entry.name}" in this browser.`, 'success');
+                renderSavedList();
+                await loadDefaultScheduleName();
+            } catch (error) {
+                setSaveScheduleStatus(error.message, 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Save Schedule';
+            }
+        }
+        
+        function parseCSV(csvText) {
+            const rows = [];
+            let currentRow = [];
+            let currentCell = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < csvText.length; i++) {
+                const char = csvText[i];
+                
+                if (char === '"') {
+                    // Escaped quote inside quoted field.
+                    if (inQuotes && csvText[i + 1] === '"') {
+                        currentCell += '"';
+                        i += 1;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    currentRow.push(currentCell);
+                    currentCell = '';
+                } else if ((char === '\n' || char === '\r') && !inQuotes) {
+                    if (char === '\r' && csvText[i + 1] === '\n') {
+                        i += 1;
+                    }
+                    currentRow.push(currentCell);
+                    rows.push(currentRow);
+                    currentRow = [];
+                    currentCell = '';
+                } else {
+                    currentCell += char;
+                }
+            }
+            
+            if (currentCell.length || currentRow.length) {
+                currentRow.push(currentCell);
+                rows.push(currentRow);
+            }
+            
+            return rows;
+        }
+        
+        function escapeHtml(value) {
+            return value
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+        
+        function formatCellContent(value, columnIndex, isHeader) {
+            const text = value || '';
+            
+            if (!isHeader && columnIndex === 0) {
+                const [periodName, periodTime] = text.split('\n');
+                const safeName = escapeHtml(periodName || '');
+                const safeTime = escapeHtml(periodTime || '');
+                
+                return `
+                    <div class="period-name">${safeName}</div>
+                    <div class="period-time">${safeTime}</div>
+                `;
+            }
+
+            const normalizedText = text.trim().toUpperCase();
+            if (!isHeader && normalizedText === 'ERROR') {
+                return escapeHtml(text).replace(/\n/g, '<br>');
+            }
+            if (!isHeader && (normalizedText === 'BREAK' || normalizedText === 'N/A')) {
+                return `<span class="break-text">${escapeHtml(text)}</span>`;
+            }
+            
+            const blocks = text.split(' / ').map(part => part.trim()).filter(Boolean);
+            if (!isHeader && blocks.length >= 1) {
+                return blocks.map(block => renderScheduleBlock(block)).join('');
+            }
+            
+            return escapeHtml(text).replace(/\n/g, '<br>');
+        }
+
+        function renderScheduleBlock(blockText) {
+            const subjectName = extractSubjectName(blockText);
+            const colors = getSubjectColors(subjectName);
+            const safeText = escapeHtml(blockText);
+            return `
+                <span
+                    class="schedule-block"
+                    style="--chip-bg:${colors.bg}; --chip-border:${colors.border}; --chip-glow:${colors.glow}; --chip-text:${colors.text};"
+                >${safeText}</span>
+            `;
+        }
+
+        function extractSubjectName(blockText) {
+            const raw = (blockText || '').trim();
+            const minutesIndex = raw.indexOf('(');
+            if (minutesIndex <= 0) return raw;
+            return raw.slice(0, minutesIndex).trim();
+        }
+
+        function hashString(value) {
+            let hash = 0;
+            for (let i = 0; i < value.length; i++) {
+                hash = ((hash << 5) - hash) + value.charCodeAt(i);
+                hash |= 0;
+            }
+            return Math.abs(hash);
+        }
+
+        function getSubjectColors(subjectName) {
+            const normalized = (subjectName || '').trim().toUpperCase();
+            const fixed = {
+                'FREE': {bg: '#1b2740', border: '#3d5b8a', glow: '#4d7cff40', text: '#cddcff'},
+                'BREAK': {bg: '#1f293b', border: '#64748b', glow: '#64748b2e', text: '#dbe6ff'},
+                'N/A': {bg: '#1f293b', border: '#64748b', glow: '#64748b2e', text: '#dbe6ff'},
+                'ERROR': {bg: '#3a1721', border: '#ef4444', glow: '#ef444444', text: '#fecaca'}
+            };
+            if (fixed[normalized]) return fixed[normalized];
+
+            const hue = hashString(normalized || 'SUBJECT') % 360;
+            return {
+                bg: `hsla(${hue}, 80%, 42%, 0.25)`,
+                border: `hsla(${hue}, 85%, 68%, 0.58)`,
+                glow: `hsla(${hue}, 90%, 62%, 0.25)`,
+                text: '#ecf3ff'
+            };
+        }
+        
+        function getCellClass(value, columnIndex) {
+            const classes = [];
+            const normalized = (value || '').trim().toUpperCase();
+            
+            if (columnIndex === 0) {
+                classes.push('period-col');
+            }
+            if (normalized === 'BREAK' || normalized === 'N/A') {
+                classes.push('break-cell');
+            } else if (normalized === 'ERROR') {
+                classes.push('error-cell');
+            } else if (normalized.startsWith('FREE')) {
+                classes.push('free-cell');
+            }
+            
+            return classes.join(' ');
+        }
+        
+        function downloadCSV() {
+            if (!generatedCSV) return;
+            downloadCsvText(generatedCSV, 'class_schedule.csv');
+        }
+        // ==============================================================
+        // Browser-only runtime (static build - no server, no account).
+        // The scheduling engine below is the real schedule_backend.py,
+        // executed in this tab by Pyodide.
+        // ==============================================================
+        const SAVED_KEY = 'class-schedule-generator/saved';
+        let pyodidePromise = null;
+
+        function setEngineStatus(message) {
+            const el = document.getElementById('engineStatus');
+            if (!el) return;
+            el.textContent = message;
+            el.style.display = message ? 'block' : 'none';
+        }
+
+        async function ensureEngine() {
+            if (!pyodidePromise) {
+                pyodidePromise = (async () => {
+                    setEngineStatus('Loading the scheduling engine. This happens once, then it is cached.');
+                    const pyodide = await loadPyodide();
+                    const source = await (await fetch('schedule_backend.py')).text();
+                    pyodide.FS.writeFile('schedule_backend.py', source);
+                    pyodide.runPython(`
+import json
+from schedule_backend import ScheduleGenerator, ScheduleConfigError
+
+def _generate(config_json):
+    try:
+        generator = ScheduleGenerator(json.loads(config_json))
+        generator.generate_schedule()
+        return json.dumps({
+            'success': True,
+            'csv': generator.export_to_csv_string(),
+            'summary': generator.get_summary(),
+        })
+    except ScheduleConfigError as error:
+        return json.dumps({'success': False, 'error': str(error)})
+    except Exception as error:
+        return json.dumps({'success': False, 'error': f'Unexpected error: {error}'})
+`);
+                    setEngineStatus('');
+                    return pyodide;
+                })().catch(error => {
+                    pyodidePromise = null;
+                    setEngineStatus('');
+                    throw new Error('Could not load the scheduling engine. Check your connection and reload.');
+                });
+            }
+            return pyodidePromise;
+        }
+
+        async function generateLocally(config) {
+            const pyodide = await ensureEngine();
+            const generate = pyodide.globals.get('_generate');
+            try {
+                return JSON.parse(generate(JSON.stringify(config)));
+            } finally {
+                generate.destroy();
+            }
+        }
+
+        // ---- saved schedules, kept in this browser ----
+        function readSaved() {
+            try {
+                const raw = localStorage.getItem(SAVED_KEY);
+                const parsed = raw ? JSON.parse(raw) : [];
+                return Array.isArray(parsed) ? parsed : [];
+            } catch (_error) {
+                return [];
+            }
+        }
+
+        function writeSaved(list) {
+            try {
+                localStorage.setItem(SAVED_KEY, JSON.stringify(list));
+                return true;
+            } catch (_error) {
+                return false;
+            }
+        }
+
+        function saveScheduleLocally(name, csv, summary, config) {
+            const list = readSaved();
+            const entry = {
+                id: `s${list.length ? Math.max(...list.map(s => Number(s.id.slice(1)) || 0)) + 1 : 1}`,
+                name: name || `Schedule ${list.length + 1}`,
+                created_at: new Date().toLocaleString(),
+                csv: csv,
+                summary: summary,
+                config: config
+            };
+            list.push(entry);
+            if (!writeSaved(list)) {
+                throw new Error('Your browser storage is full. Delete a saved schedule and try again.');
+            }
+            return entry;
+        }
+
+        function deleteSaved(id) {
+            if (!confirm('Delete this saved schedule? This cannot be undone.')) return;
+            writeSaved(readSaved().filter(s => s.id !== id));
+            renderSavedList();
+        }
+
+        function viewSaved(id) {
+            const entry = readSaved().find(s => s.id === id);
+            if (!entry) return;
+            generatedCSV = entry.csv;
+            generatedSummary = entry.summary;
+            generatedConfig = entry.config;
+            displayResults(entry.csv, entry.summary);
+            document.getElementById('scheduleName').value = entry.name;
+            setSaveScheduleStatus(`Showing "${entry.name}".`);
+        }
+
+        function downloadSaved(id) {
+            const entry = readSaved().find(s => s.id === id);
+            if (entry) downloadCsvText(entry.csv, `${entry.name.replace(/\s+/g, '_')}.csv`);
+        }
+
+        function downloadCsvText(csvText, filename) {
+            const blob = new Blob([csvText], {type: 'text/csv;charset=utf-8;'});
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            URL.revokeObjectURL(url);
+            link.remove();
+        }
+
+        function renderSavedList() {
+            const container = document.getElementById('savedList');
+            if (!container) return;
+            const list = readSaved();
+            if (!list.length) {
+                container.innerHTML = '<p class="saved-empty">Nothing saved yet. Generate a schedule and press Save Schedule.</p>';
+                return;
+            }
+            container.innerHTML = list.slice().reverse().map(entry => `
+                <div class="saved-row">
+                    <span class="saved-name">${escapeHtml(entry.name)}</span>
+                    <span class="saved-date">${escapeHtml(entry.created_at)}</span>
+                    <button type="button" class="add-btn" onclick="viewSaved('${entry.id}')">View</button>
+                    <button type="button" class="add-btn" onclick="downloadSaved('${entry.id}')">CSV</button>
+                    <button type="button" class="remove-btn" onclick="deleteSaved('${entry.id}')">Delete</button>
+                </div>
+            `).join('');
+        }
+
+        function openSavedPanel() {
+            const panel = document.getElementById('savedPanel');
+            if (!panel) return;
+            const showing = panel.style.display === 'block';
+            panel.style.display = showing ? 'none' : 'block';
+            if (!showing) {
+                renderSavedList();
+                panel.scrollIntoView({behavior: 'smooth', block: 'nearest'});
+            }
+        }
+
+        // ---- page furniture that the Flask version got from the server ----
+        function injectStaticChrome() {
+            const container = document.querySelector('.container');
+            const form = document.getElementById('scheduleForm');
+            if (!container || !form) return;
+
+            const note = document.createElement('div');
+            note.className = 'browser-note';
+            note.innerHTML = 'No account needed. Everything runs in this browser, and saved schedules stay on this device — clearing your browser data removes them, and they will not appear on another computer. Use <strong>Download CSV</strong> to keep a copy.';
+            container.insertBefore(note, form);
+
+            const status = document.createElement('div');
+            status.className = 'engine-status';
+            status.id = 'engineStatus';
+            container.insertBefore(status, form);
+
+            const panel = document.createElement('div');
+            panel.className = 'saved-panel';
+            panel.id = 'savedPanel';
+            panel.innerHTML = '<h2>Saved Schedules</h2><p class="help-text">Stored in this browser.</p><div id="savedList"></div>';
+            container.insertBefore(panel, form);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            injectStaticChrome();
+            // Warm the engine up so the first Generate is not a long wait.
+            ensureEngine().catch(() => { /* surfaced when the user generates */ });
+        });
+    </script>
+</body>
+</html>

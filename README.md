@@ -8,6 +8,34 @@ Built for a 6-day elementary cycle with fixed PE, Music, DPA and Learning
 Commons slots, but everything is configurable through the interface - no code
 editing.
 
+## Use it online
+
+**<https://connorswartz.github.io/class-schedule-generator/>**
+
+No sign-up, nothing to install. The scheduling engine runs in your browser
+(Python via [Pyodide](https://pyodide.org)), and saved schedules are kept in
+that browser's storage - so they stay on your device, and clearing your browser
+data removes them. Download the CSV to keep a copy.
+
+The first visit downloads the Python runtime, which takes a few seconds; after
+that it is cached.
+
+## Two versions, one engine
+
+| | Browser version (`docs/`) | Flask app (`app.py`) |
+|---|---|---|
+| Accounts | None needed | Username + password |
+| Saved schedules | This browser only | Shared database, any device |
+| Hosting | GitHub Pages, free | Needs a Python host |
+
+Both run the exact same `schedule_backend.py`. `build_static.py` generates the
+browser version from `templates/index.html`, so the UI and the engine are never
+duplicated - and CI fails if `docs/` drifts out of date.
+
+```bash
+python build_static.py
+```
+
 ## Run it locally
 
 On Windows, double-click **`run.bat`**. Otherwise:

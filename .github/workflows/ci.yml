@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run the test suite
+        run: python test_backend.py
+
+      - name: Check docs/ is up to date with the engine and template
+        run: |
+          python build_static.py
+          if ! git diff --quiet -- docs/; then
+            echo "::error::docs/ is stale. Run 'python build_static.py' and commit the result."
+            git diff --stat -- docs/
+            exit 1
+          fi
+          echo "docs/ is in sync."
