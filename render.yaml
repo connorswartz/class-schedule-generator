@@ -1,0 +1,27 @@
+# Render Blueprint. See DEPLOY.md for the walkthrough.
+#
+# Note: Render's FREE tier has no persistent disk, so scheduler.db is wiped
+# whenever the service restarts or redeploys - every account and saved schedule
+# is lost. For real use either upgrade the plan and attach a disk (see the
+# commented block below), or host on PythonAnywhere, whose free tier keeps files.
+services:
+  - type: web
+    name: class-schedule-generator
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt gunicorn
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.10"
+      - key: FLASK_SECRET_KEY
+        generateValue: true
+      - key: DATA_DIR
+        value: /var/data
+
+    # Paid plans only - uncomment together with a non-free `plan:` above to
+    # keep accounts and saved schedules across restarts.
+    # disk:
+    #   name: scheduler-data
+    #   mountPath: /var/data
+    #   sizeGB: 1

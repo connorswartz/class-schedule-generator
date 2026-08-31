@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign In - Class Schedule Generator</title>
+    <style>
+        :root {
+            --bg-0: #070b14;
+            --bg-1: #0d1422;
+            --panel: #101a2d;
+            --line: #283654;
+            --text: #edf2ff;
+            --muted: #98a9cc;
+            --accent: #4d7cff;
+            --danger: #ef4444;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            color: var(--text);
+            font-family: "Manrope", "Avenir Next", sans-serif;
+            background:
+                radial-gradient(900px 500px at 10% 0%, #1e3a8a55 0%, transparent 70%),
+                radial-gradient(900px 500px at 90% 0%, #be123c44 0%, transparent 70%),
+                linear-gradient(160deg, var(--bg-0) 0%, var(--bg-1) 100%);
+        }
+
+        .card {
+            width: 100%;
+            max-width: 440px;
+            background: linear-gradient(160deg, #0f192d 0%, #12203a 100%);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        h1 {
+            margin-bottom: 8px;
+            font-size: 1.8rem;
+        }
+
+        .subtitle {
+            margin-bottom: 18px;
+            color: var(--muted);
+        }
+
+        .group { margin-bottom: 14px; }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: #d3def6;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid #314162;
+            border-radius: 10px;
+            background: #0d1627;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #6a8bff;
+            box-shadow: 0 0 0 3px #4d7cff33;
+        }
+
+        button {
+            width: 100%;
+            padding: 11px 14px;
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            background: linear-gradient(120deg, #1d4ed8 0%, #3b82f6 100%);
+            margin-top: 4px;
+        }
+
+        .flash {
+            margin-bottom: 14px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            border: 1px solid transparent;
+        }
+
+        .flash.error {
+            background: #44131f;
+            border-color: #7f1d32;
+            color: #ffb9c6;
+        }
+
+        .flash.success {
+            background: #11342a;
+            border-color: #1f6f55;
+            color: #9df7d0;
+        }
+
+        .footer {
+            margin-top: 14px;
+            font-size: 0.9rem;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        a { color: #9db6ff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Sign In</h1>
+        <p class="subtitle">Access your saved schedules.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="post" action="{{ url_for('login') }}">
+            <div class="group">
+                <label for="username">Username</label>
+                <input id="username" name="username" type="text" required>
+            </div>
+
+            <div class="group">
+                <label for="password">Password</label>
+                <input id="password" name="password" type="password" required>
+            </div>
+
+            <button type="submit">Sign In</button>
+        </form>
+
+        <p class="footer">
+            New here? <a href="{{ url_for('register') }}">Create an account</a>
+        </p>
+    </div>
+</body>
+</html>

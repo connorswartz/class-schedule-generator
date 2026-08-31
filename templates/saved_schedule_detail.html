@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ schedule["name"] }} - Saved Schedule</title>
+    <style>
+        :root {
+            --bg-0: #070b14;
+            --bg-1: #0d1422;
+            --line: #273656;
+            --text: #edf2ff;
+            --muted: #98a9cc;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100vh;
+            padding: 24px;
+            color: var(--text);
+            font-family: "Manrope", "Avenir Next", sans-serif;
+            background:
+                radial-gradient(900px 500px at 10% 0%, #1e3a8a55 0%, transparent 70%),
+                radial-gradient(900px 500px at 90% 0%, #be123c44 0%, transparent 70%),
+                linear-gradient(160deg, var(--bg-0) 0%, var(--bg-1) 100%);
+        }
+
+        .container {
+            max-width: 1240px;
+            margin: 0 auto;
+            background: linear-gradient(160deg, #0f192d 0%, #12203a 100%);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 22px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+        }
+
+        h1 {
+            font-size: 1.7rem;
+            margin-bottom: 4px;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+            color: #fff;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            padding: 8px 12px;
+            font-weight: 700;
+            font-size: 0.88rem;
+        }
+
+        .btn.primary {
+            background: linear-gradient(120deg, #1d4ed8 0%, #3b82f6 100%);
+        }
+
+        .btn.secondary {
+            border-color: #33496f;
+            background: #0c162b;
+            color: #dbe7ff;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 12px;
+            margin-bottom: 18px;
+        }
+
+        .card {
+            border: 1px solid #2a3a5f;
+            border-radius: 12px;
+            padding: 14px;
+            background: #0d1729;
+        }
+
+        .card h3 {
+            font-size: 0.92rem;
+            margin-bottom: 6px;
+            color: #dbe6ff;
+        }
+
+        .card .value {
+            font-size: 1.6rem;
+            font-weight: 800;
+        }
+
+        .table-wrap {
+            overflow: auto;
+            border: 1px solid #2a3a5f;
+            border-radius: 12px;
+            background: #0b1324;
+            box-shadow: inset 0 1px 0 #ffffff10;
+        }
+
+        table {
+            width: 100%;
+            min-width: 980px;
+            border-collapse: separate;
+            border-spacing: 0;
+            table-layout: fixed;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #22304d;
+            vertical-align: top;
+            text-align: left;
+            line-height: 1.3;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        th {
+            background: linear-gradient(120deg, #1f2f52 0%, #172746 100%);
+            color: #f0f4ff;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            font-weight: 700;
+        }
+
+        tbody tr:nth-child(even) td { background: #0f1a30; }
+        tbody tr:nth-child(odd) td { background: #0c1629; }
+        tbody tr:hover td { background: #14213a; }
+
+        th:first-child,
+        td.period-col {
+            width: 220px;
+            min-width: 220px;
+            position: sticky;
+            left: 0;
+            z-index: 1;
+            box-shadow: 1px 0 0 #22304d;
+        }
+
+        td.period-col {
+            background: #0c162b;
+        }
+
+        .period-name {
+            font-size: 1.01rem;
+            font-weight: 700;
+            color: #eef3ff;
+            margin-bottom: 3px;
+        }
+
+        .period-time {
+            font-size: 0.9rem;
+            color: #90a3c8;
+            font-weight: 600;
+        }
+
+        .schedule-block {
+            display: flex;
+            width: fit-content;
+            max-width: 100%;
+            padding: 4px 10px;
+            margin-bottom: 6px;
+            border-radius: 999px;
+            border: 1px solid var(--chip-border, #3a4d75);
+            background: var(--chip-bg, #1a2741);
+            box-shadow:
+                inset 0 1px 0 #ffffff22,
+                0 0 12px var(--chip-glow, #00000000);
+            color: var(--chip-text, #e8efff);
+            font-size: 0.84rem;
+            font-weight: 700;
+            line-height: 1.25;
+        }
+
+        .schedule-block:last-child {
+            margin-bottom: 0;
+        }
+
+        .break-text {
+            color: #8ea3ca;
+            font-style: italic;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+
+        .error-text {
+            color: #ff7a7a;
+            font-weight: 700;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <div>
+                <h1>{{ schedule["name"] }}</h1>
+                <p class="muted">Saved {{ schedule["created_at"] }}</p>
+            </div>
+            <div class="actions">
+                <a class="btn secondary" href="{{ url_for('saved_schedules') }}">Back to Saved</a>
+                <a class="btn primary" href="{{ url_for('download_saved_schedule', schedule_id=schedule['id']) }}">Download CSV</a>
+            </div>
+        </div>
+
+        {% if summary %}
+            <div class="summary">
+                <div class="card">
+                    <h3>Total Available Time</h3>
+                    <div class="value">{{ summary.get("total_available", 0) }}</div>
+                </div>
+                <div class="card">
+                    <h3>Total Assigned</h3>
+                    <div class="value">{{ summary.get("total_assigned", 0) }}</div>
+                </div>
+                <div class="card">
+                    <h3>Free Time</h3>
+                    <div class="value">{{ summary.get("total_free", 0) }}</div>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        {% for col in header %}
+                            <th>{{ col }}</th>
+                        {% endfor %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in body_rows %}
+                        <tr>
+                            {% for cell in row %}
+                                <td class="saved-cell {% if loop.index0 == 0 %}period-col{% endif %}" data-col="{{ loop.index0 }}" data-value="{{ cell | e }}">{{ cell }}</td>
+                            {% endfor %}
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <script>
+        function escapeHtml(value) {
+            return String(value ?? '')
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function extractSubjectName(blockText) {
+            const raw = (blockText || '').trim();
+            const minutesIndex = raw.indexOf('(');
+            if (minutesIndex <= 0) return raw;
+            return raw.slice(0, minutesIndex).trim();
+        }
+
+        function hashString(value) {
+            let hash = 0;
+            for (let i = 0; i < value.length; i++) {
+                hash = ((hash << 5) - hash) + value.charCodeAt(i);
+                hash |= 0;
+            }
+            return Math.abs(hash);
+        }
+
+        function getSubjectColors(subjectName) {
+            const normalized = (subjectName || '').trim().toUpperCase();
+            const fixed = {
+                'FREE': {bg: '#1b2740', border: '#3d5b8a', glow: '#4d7cff40', text: '#cddcff'},
+                'ERROR': {bg: '#3a1721', border: '#ef4444', glow: '#ef444444', text: '#fecaca'}
+            };
+            if (fixed[normalized]) return fixed[normalized];
+
+            const hue = hashString(normalized || 'SUBJECT') % 360;
+            return {
+                bg: `hsla(${hue}, 80%, 42%, 0.25)`,
+                border: `hsla(${hue}, 85%, 68%, 0.58)`,
+                glow: `hsla(${hue}, 90%, 62%, 0.25)`,
+                text: '#ecf3ff'
+            };
+        }
+
+        function renderScheduleBlock(blockText) {
+            const subjectName = extractSubjectName(blockText);
+            const colors = getSubjectColors(subjectName);
+            const safeText = escapeHtml(blockText);
+            return `
+                <span
+                    class="schedule-block"
+                    style="--chip-bg:${colors.bg}; --chip-border:${colors.border}; --chip-glow:${colors.glow}; --chip-text:${colors.text};"
+                >${safeText}</span>
+            `;
+        }
+
+        function formatCellContent(value, columnIndex) {
+            const text = value || '';
+            const normalized = text.trim().toUpperCase();
+
+            if (columnIndex === 0) {
+                const [periodName, periodTime] = text.split('\n');
+                return `
+                    <div class="period-name">${escapeHtml(periodName || '')}</div>
+                    <div class="period-time">${escapeHtml(periodTime || '')}</div>
+                `;
+            }
+
+            if (normalized === 'BREAK' || normalized === 'N/A') {
+                return `<span class="break-text">${escapeHtml(text)}</span>`;
+            }
+            if (normalized === 'ERROR') {
+                return `<span class="error-text">${escapeHtml(text)}</span>`;
+            }
+
+            const blocks = text.split(' / ').map(part => part.trim()).filter(Boolean);
+            if (blocks.length >= 1) {
+                return blocks.map(block => renderScheduleBlock(block)).join('');
+            }
+            return escapeHtml(text).replace(/\n/g, '<br>');
+        }
+
+        document.querySelectorAll('td.saved-cell').forEach(cell => {
+            const columnIndex = Number(cell.dataset.col || '0');
+            const rawValue = cell.dataset.value || cell.textContent || '';
+            cell.innerHTML = formatCellContent(rawValue, columnIndex);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saved Schedules - Class Schedule Generator</title>
+    <style>
+        :root {
+            --bg-0: #070b14;
+            --bg-1: #0d1422;
+            --line: #273656;
+            --text: #edf2ff;
+            --muted: #98a9cc;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100vh;
+            padding: 24px;
+            color: var(--text);
+            font-family: "Manrope", "Avenir Next", sans-serif;
+            background:
+                radial-gradient(900px 500px at 10% 0%, #1e3a8a55 0%, transparent 70%),
+                radial-gradient(900px 500px at 90% 0%, #be123c44 0%, transparent 70%),
+                linear-gradient(160deg, var(--bg-0) 0%, var(--bg-1) 100%);
+        }
+
+        .container {
+            max-width: 980px;
+            margin: 0 auto;
+            background: linear-gradient(160deg, #0f192d 0%, #12203a 100%);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 22px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            text-decoration: none;
+            color: #fff;
+            border-radius: 10px;
+            border: 1px solid transparent;
+            padding: 8px 12px;
+            font-weight: 700;
+            font-size: 0.88rem;
+        }
+
+        .btn.primary {
+            background: linear-gradient(120deg, #1d4ed8 0%, #3b82f6 100%);
+        }
+
+        .btn.secondary {
+            border-color: #33496f;
+            background: #0c162b;
+            color: #dbe7ff;
+        }
+
+        .list {
+            display: grid;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .item {
+            border: 1px solid #2a3a5f;
+            border-radius: 12px;
+            padding: 14px;
+            background: #0d1729;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .item-title {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .empty {
+            margin-top: 18px;
+            border: 1px dashed #35507f;
+            border-radius: 12px;
+            padding: 20px;
+            color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="topbar">
+            <div>
+                <h1>Saved Schedules</h1>
+                <p class="muted">Signed in as {{ username }}</p>
+            </div>
+            <div class="actions">
+                <a class="btn primary" href="{{ url_for('index') }}">New Schedule</a>
+                <a class="btn secondary" href="{{ url_for('logout') }}">Sign Out</a>
+            </div>
+        </div>
+
+        {% if schedules %}
+            <div class="list">
+                {% for schedule in schedules %}
+                    <div class="item">
+                        <div>
+                            <p class="item-title">{{ schedule["name"] }}</p>
+                            <p class="muted">Saved {{ schedule["created_at"] }}</p>
+                        </div>
+                        <a class="btn secondary" href="{{ url_for('saved_schedule_detail', schedule_id=schedule['id']) }}">Open</a>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty">
+                No schedules saved yet.
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

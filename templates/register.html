@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Account - Class Schedule Generator</title>
+    <style>
+        :root {
+            --bg-0: #070b14;
+            --bg-1: #0d1422;
+            --panel: #101a2d;
+            --line: #283654;
+            --text: #edf2ff;
+            --muted: #98a9cc;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            padding: 20px;
+            color: var(--text);
+            font-family: "Manrope", "Avenir Next", sans-serif;
+            background:
+                radial-gradient(900px 500px at 10% 0%, #1e3a8a55 0%, transparent 70%),
+                radial-gradient(900px 500px at 90% 0%, #be123c44 0%, transparent 70%),
+                linear-gradient(160deg, var(--bg-0) 0%, var(--bg-1) 100%);
+        }
+
+        .card {
+            width: 100%;
+            max-width: 460px;
+            background: linear-gradient(160deg, #0f192d 0%, #12203a 100%);
+            border: 1px solid var(--line);
+            border-radius: 16px;
+            padding: 28px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+        }
+
+        h1 {
+            margin-bottom: 8px;
+            font-size: 1.8rem;
+        }
+
+        .subtitle {
+            margin-bottom: 18px;
+            color: var(--muted);
+        }
+
+        .group { margin-bottom: 14px; }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: #d3def6;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid #314162;
+            border-radius: 10px;
+            background: #0d1627;
+            color: var(--text);
+            font-size: 0.95rem;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #6a8bff;
+            box-shadow: 0 0 0 3px #4d7cff33;
+        }
+
+        .rules-box {
+            margin-bottom: 12px;
+            padding: 10px 12px;
+            border: 1px solid #314162;
+            border-radius: 10px;
+            background: #0d1627;
+        }
+
+        .rules-title {
+            margin-bottom: 8px;
+            font-size: 0.86rem;
+            color: var(--muted);
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .rules-list {
+            margin-left: 18px;
+            display: grid;
+            gap: 4px;
+        }
+
+        .rules-list li {
+            color: #ffb9c6;
+            font-size: 0.88rem;
+        }
+
+        .rules-list li.met {
+            color: #9df7d0;
+        }
+
+        .show-passwords {
+            margin-bottom: 14px;
+        }
+
+        .show-passwords label {
+            margin: 0;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.88rem;
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .show-passwords input[type="checkbox"] {
+            width: auto;
+            accent-color: #3b82f6;
+        }
+
+        .inline-warning {
+            display: none;
+            margin-top: 6px;
+            color: #ff9fb1;
+            font-size: 0.84rem;
+            line-height: 1.25;
+        }
+
+        button {
+            width: 100%;
+            padding: 11px 14px;
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            font-weight: 700;
+            cursor: pointer;
+            background: linear-gradient(120deg, #1d4ed8 0%, #3b82f6 100%);
+            margin-top: 4px;
+        }
+
+        .flash {
+            margin-bottom: 14px;
+            padding: 10px 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            border: 1px solid transparent;
+        }
+
+        .flash.error {
+            background: #44131f;
+            border-color: #7f1d32;
+            color: #ffb9c6;
+        }
+
+        .flash.success {
+            background: #11342a;
+            border-color: #1f6f55;
+            color: #9df7d0;
+        }
+
+        .footer {
+            margin-top: 14px;
+            font-size: 0.9rem;
+            color: var(--muted);
+            text-align: center;
+        }
+
+        a { color: #9db6ff; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>Create Account</h1>
+        <p class="subtitle">Save and revisit schedules anytime.</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="flash {{ category }}">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="post" action="{{ url_for('register') }}">
+            <div class="group">
+                <label for="username">Username</label>
+                <input id="username" name="username" type="text" required>
+            </div>
+
+            <div class="group">
+                <label for="password">Password</label>
+                <div class="rules-box">
+                    <p class="rules-title">Password Requirements</p>
+                    <ul class="rules-list">
+                        <li id="rule-length">At least 8 characters</li>
+                        <li id="rule-uppercase">At least 1 uppercase letter</li>
+                        <li id="rule-lowercase">At least 1 lowercase letter</li>
+                        <li id="rule-number">At least 1 number</li>
+                        <li id="rule-special">At least 1 special character</li>
+                    </ul>
+                </div>
+                <input id="password" name="password" type="password" required>
+            </div>
+
+            <div class="group">
+                <label for="confirm_password">Confirm Password</label>
+                <input id="confirm_password" name="confirm_password" type="password" required>
+                <p id="confirmWarning" class="inline-warning">Password does not match.</p>
+            </div>
+
+            <div class="show-passwords">
+                <label>
+                    <input id="togglePasswordVisibility" type="checkbox">
+                    Show passwords
+                </label>
+            </div>
+
+            <button type="submit">Create Account</button>
+        </form>
+
+        <p class="footer">
+            Already have an account? <a href="{{ url_for('login') }}">Sign in</a>
+        </p>
+    </div>
+    <script>
+        const registerForm = document.querySelector('form[action="{{ url_for("register") }}"]');
+        const passwordInput = document.getElementById('password');
+        const confirmInput = document.getElementById('confirm_password');
+        const confirmWarning = document.getElementById('confirmWarning');
+        const togglePasswordVisibility = document.getElementById('togglePasswordVisibility');
+
+        const rules = [
+            {id: 'rule-length', test: value => value.length >= 8},
+            {id: 'rule-uppercase', test: value => /[A-Z]/.test(value)},
+            {id: 'rule-lowercase', test: value => /[a-z]/.test(value)},
+            {id: 'rule-number', test: value => /\d/.test(value)},
+            {id: 'rule-special', test: value => /[^A-Za-z0-9]/.test(value)},
+        ];
+
+        function refreshRuleStatus() {
+            const value = passwordInput.value || '';
+            rules.forEach(rule => {
+                const item = document.getElementById(rule.id);
+                if (!item) return;
+                item.classList.toggle('met', rule.test(value));
+            });
+        }
+
+        function isPasswordValid() {
+            const value = passwordInput.value || '';
+            return rules.every(rule => rule.test(value));
+        }
+
+        function refreshPasswordMatchStatus() {
+            const password = passwordInput.value || '';
+            const confirm = confirmInput.value || '';
+            const hasMismatch = confirm.length > 0 && confirm !== password;
+
+            confirmWarning.style.display = hasMismatch ? 'block' : 'none';
+            confirmInput.style.borderColor = hasMismatch ? '#ef4444' : '';
+            confirmInput.style.boxShadow = hasMismatch ? '0 0 0 3px #ef444433' : '';
+            return !hasMismatch;
+        }
+
+        passwordInput.addEventListener('input', () => {
+            refreshRuleStatus();
+            refreshPasswordMatchStatus();
+        });
+
+        confirmInput.addEventListener('input', refreshPasswordMatchStatus);
+        confirmInput.addEventListener('blur', refreshPasswordMatchStatus);
+
+        togglePasswordVisibility.addEventListener('change', () => {
+            const type = togglePasswordVisibility.checked ? 'text' : 'password';
+            passwordInput.type = type;
+            confirmInput.type = type;
+        });
+
+        registerForm.addEventListener('submit', (event) => {
+            const validRules = isPasswordValid();
+            const matches = refreshPasswordMatchStatus();
+            if (!validRules || !matches) {
+                event.preventDefault();
+            }
+        });
+
+        refreshRuleStatus();
+    </script>
+</body>
+</html>

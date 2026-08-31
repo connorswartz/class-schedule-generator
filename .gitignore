@@ -1,0 +1,14 @@
+# Virtual environments
+.venv/
+venv/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Local secrets and data
+.flask_secret
+scheduler.db
+
+# Backups
+*.bak
