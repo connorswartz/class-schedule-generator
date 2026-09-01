@@ -781,6 +781,106 @@
             background: #425b87;
         }
 
+        .school-day-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 14px;
+        }
+
+        .break-item {
+            background: linear-gradient(165deg, #0d1628 0%, #101a30 100%);
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #273656;
+        }
+
+        .break-item .grid {
+            margin-bottom: 10px;
+        }
+
+        .day-readout {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 12px;
+            margin-top: 18px;
+        }
+
+        .readout-card {
+            background: #0a1425;
+            border: 1px solid #273656;
+            border-radius: 12px;
+            padding: 13px 15px;
+        }
+
+        .readout-card .value {
+            font-family: 'Space Grotesk', 'Manrope', sans-serif;
+            font-size: 1.45rem;
+            font-weight: 700;
+            color: #f5f8ff;
+            line-height: 1.1;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .readout-card .label {
+            color: var(--muted);
+            font-size: 0.8rem;
+            margin-top: 5px;
+            line-height: 1.35;
+        }
+
+        .bell-preview {
+            margin-top: 16px;
+            border: 1px solid #273656;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .bell-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 14px;
+            padding: 9px 15px;
+            font-size: 0.87rem;
+            border-bottom: 1px solid var(--line-soft);
+        }
+
+        .bell-row:last-child {
+            border-bottom: none;
+        }
+
+        .bell-row .bell-name {
+            font-weight: 600;
+        }
+
+        .bell-row .bell-length {
+            color: var(--muted);
+            font-variant-numeric: tabular-nums;
+            white-space: nowrap;
+        }
+
+        .bell-row.is-break {
+            background: #0a1425;
+        }
+
+        .bell-row.is-break .bell-name {
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .school-day-problem {
+            display: none;
+            background: #3b1220;
+            border: 1px solid #7f1d3a;
+            color: #ffc9d6;
+            border-radius: 10px;
+            padding: 11px 15px;
+            margin-top: 14px;
+            font-size: 0.88rem;
+            line-height: 1.45;
+        }
+
         @media (max-width: 920px) {
             body {
                 padding: 14px;
@@ -920,7 +1020,40 @@
                     <p class="help-text">Choose between 1 and 12 days in your schedule cycle.</p>
                 </div>
             </div>
-            
+
+            <!-- School Day -->
+            <div class="section">
+                <h2 class="section-title">School Day</h2>
+                <p class="help-text" style="margin-bottom: 15px;">Set the bell times once. Whatever is left between the breaks is split into teaching periods, and the totals below update as you go.</p>
+
+                <div class="school-day-grid">
+                    <div class="form-group">
+                        <label for="schoolStart">School Starts:</label>
+                        <input type="time" id="schoolStart" value="08:41" onchange="refreshSchoolDay()" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="schoolEnd">School Ends:</label>
+                        <input type="time" id="schoolEnd" value="15:10" onchange="refreshSchoolDay()" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="periodCount">Teaching Periods per Day:</label>
+                        <input type="number" id="periodCount" min="1" max="16" value="7" onchange="refreshSchoolDay()" required>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label>Breaks:</label>
+                    <p class="help-text" style="margin-bottom: 12px;">Lunch, recess, and anything else that is never teaching time. These stay put; periods are built around them.</p>
+                    <div id="breaksContainer"></div>
+                    <button type="button" class="add-btn" onclick="addBreak()">+ Add Break</button>
+                </div>
+
+                <div id="schoolDayProblem" class="school-day-problem"></div>
+
+                <div class="day-readout" id="dayReadout"></div>
+                <div class="bell-preview" id="bellPreview"></div>
+            </div>
+
             <!-- Pre-filled Activities -->
             <div class="section">
                 <h2 class="section-title">Pre-filled Activities</h2>
@@ -1037,27 +1170,20 @@
         let periodsList = [];
         let subjectsList = [];
         const DAY_COUNT_OPTIONS = Array.from({length: 12}, (_, i) => i + 1);
-        const PERIOD_OPTIONS = [
-            {label: 'Period 1', value: 'period_1'},
-            {label: 'Period 2', value: 'period_2'},
-            {label: 'Period 3', value: 'period_3'},
-            {label: 'Period 4', value: 'period_4'},
-            {label: 'Period 5', value: 'period_5'},
-            {label: 'Period 6', value: 'period_6'},
-            {label: 'Period 7', value: 'period_7'}
+        // The school day is described by its bell times, not by a fixed list of
+        // periods: start, end, and the breaks that are always in the same place.
+        // Everything else is teaching time, divided into `periodCount` periods.
+        const DEFAULT_SCHOOL_DAY = {start: '08:41', end: '15:10', periodCount: 7};
+        const DEFAULT_BREAKS = [
+            {name: 'Snack', start: '10:13', end: '10:18'},
+            {name: 'Lunch', start: '11:57', end: '12:41'},
+            {name: 'Recess', start: '13:30', end: '13:50'}
         ];
-        const DEFAULT_PERIODS = [
-            {name: 'period_1', start: '8:41', end: '9:24', duration: 43, ignored: false},
-            {name: 'period_2', start: '9:24', end: '10:13', duration: 49, ignored: false},
-            {name: 'snack', start: '10:13', end: '10:18', duration: 5, ignored: true},
-            {name: 'period_3', start: '10:18', end: '11:08', duration: 50, ignored: false},
-            {name: 'period_4', start: '11:08', end: '11:57', duration: 49, ignored: false},
-            {name: 'lunch', start: '11:57', end: '12:41', duration: 44, ignored: true},
-            {name: 'period_5', start: '12:41', end: '13:30', duration: 49, ignored: false},
-            {name: 'recess', start: '13:30', end: '13:50', duration: 20, ignored: true},
-            {name: 'period_6', start: '13:50', end: '14:20', duration: 30, ignored: false},
-            {name: 'period_7', start: '14:20', end: '15:10', duration: 50, ignored: false}
-        ];
+        // Periods starting before this are "morning" unless the teacher says otherwise.
+        const MIDDAY_MINUTES = 12 * 60;
+        let breaksList = [];
+        let schoolDayError = '';
+        let priorityDefaultsApplied = false;
         
         // Initialize default configuration
         window.onload = function() {
@@ -1065,7 +1191,9 @@
         };
         
         function initializeDefaults() {
-            periodsList = DEFAULT_PERIODS.map(period => ({...period}));
+            breaksList = DEFAULT_BREAKS.map(item => ({...item}));
+            renderBreaks();
+            refreshSchoolDay();
             renderDayCountSelector();
             setNumDays(getNumDays());
             initializeMaxPerDayPicker(120);
@@ -1141,6 +1269,340 @@
             ).join('');
         }
 
+        // ---- school day -------------------------------------------------
+        function parseTime(value) {
+            const match = /^\s*(\d{1,2}):(\d{2})\s*$/.exec(value || '');
+            if (!match) return null;
+            const hours = parseInt(match[1], 10);
+            const minutes = parseInt(match[2], 10);
+            if (hours > 23 || minutes > 59) return null;
+            return hours * 60 + minutes;
+        }
+
+        // Times shown on the schedule keep the existing 8:41 / 15:10 style.
+        function formatTime(totalMinutes) {
+            const hours = Math.floor(totalMinutes / 60);
+            return `${hours}:${String(totalMinutes % 60).padStart(2, '0')}`;
+        }
+
+        // <input type="time"> only accepts a zero-padded 24-hour value.
+        function formatTimeInput(value) {
+            const parsed = parseTime(value);
+            if (parsed === null) return '';
+            return `${String(Math.floor(parsed / 60)).padStart(2, '0')}:${String(parsed % 60).padStart(2, '0')}`;
+        }
+
+        function slugify(name) {
+            return String(name || '')
+                .trim()
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, '_')
+                .replace(/^_+|_+$/g, '');
+        }
+
+        function getSchoolDayInputs() {
+            const periodsRaw = parseInt(document.getElementById('periodCount').value, 10);
+            return {
+                start: parseTime(document.getElementById('schoolStart').value),
+                end: parseTime(document.getElementById('schoolEnd').value),
+                periodCount: Number.isNaN(periodsRaw) ? 0 : periodsRaw
+            };
+        }
+
+        /**
+         * Turn the bell times into the period list the engine expects.
+         * Breaks are fixed points; the gaps between them are teaching stretches,
+         * and the periods are shared out across those stretches in proportion to
+         * how long each one is. Returns {periods, error} - a non-empty `error` is
+         * a message for the teacher and means `periods` should not be used.
+         */
+        function buildSchoolDay() {
+            const {start, end, periodCount} = getSchoolDayInputs();
+            const fail = message => ({periods: [], error: message});
+
+            if (start === null || end === null) {
+                return fail('Enter a start time and an end time for the school day.');
+            }
+            if (end <= start) {
+                return fail('School has to end after it starts.');
+            }
+            if (periodCount < 1) {
+                return fail('The day needs at least one teaching period.');
+            }
+
+            const breaks = [];
+            for (const item of breaksList) {
+                const label = String(item.name || '').trim() || 'Break';
+                const breakStart = parseTime(item.start);
+                const breakEnd = parseTime(item.end);
+
+                if (breakStart === null || breakEnd === null) {
+                    return fail(`"${label}" needs both a start time and an end time.`);
+                }
+                if (breakEnd <= breakStart) {
+                    return fail(`"${label}" has to end after it starts.`);
+                }
+                if (breakStart < start || breakEnd > end) {
+                    return fail(
+                        `"${label}" falls outside the ${formatTime(start)}-${formatTime(end)} school day.`
+                    );
+                }
+                breaks.push({name: label, start: breakStart, end: breakEnd});
+            }
+
+            breaks.sort((a, b) => a.start - b.start);
+            for (let i = 1; i < breaks.length; i++) {
+                if (breaks[i].start < breaks[i - 1].end) {
+                    return fail(`"${breaks[i - 1].name}" and "${breaks[i].name}" overlap.`);
+                }
+            }
+
+            // Whatever the breaks leave behind is teaching time, one stretch per
+            // gap. A break sitting flush against another one, or against the
+            // start or end of the day, simply contributes no stretch.
+            const stretches = [];
+            let cursor = start;
+            breaks.forEach(item => {
+                if (item.start > cursor) stretches.push({start: cursor, end: item.start});
+                cursor = item.end;
+            });
+            if (end > cursor) stretches.push({start: cursor, end: end});
+
+            if (!stretches.length) {
+                return fail('The breaks cover the whole day, so there is no teaching time left.');
+            }
+
+            const teachingMinutes = stretches.reduce((total, s) => total + (s.end - s.start), 0);
+            if (periodCount < stretches.length) {
+                return fail(
+                    `The breaks split the day into ${stretches.length} teaching stretches, ` +
+                    `so you need at least ${stretches.length} periods.`
+                );
+            }
+            if (periodCount > teachingMinutes) {
+                return fail(
+                    `There are only ${teachingMinutes} min of teaching time a day, ` +
+                    `so ${periodCount} periods will not fit.`
+                );
+            }
+
+            // Every stretch gets at least one period; the spare periods go to
+            // whichever stretch is furthest below its share of the day, and no
+            // stretch takes more periods than it has minutes.
+            const counts = stretches.map(() => 1);
+            const fairShare = stretches.map(s => (s.end - s.start) / teachingMinutes * periodCount);
+            for (let spare = periodCount - stretches.length; spare > 0; spare--) {
+                let bestIndex = -1;
+                let bestGap = -Infinity;
+                stretches.forEach((s, index) => {
+                    if (counts[index] >= s.end - s.start) return;
+                    const gap = fairShare[index] - counts[index];
+                    if (gap > bestGap) {
+                        bestGap = gap;
+                        bestIndex = index;
+                    }
+                });
+                if (bestIndex === -1) break;
+                counts[bestIndex] += 1;
+            }
+
+            const periods = [];
+            let periodNumber = 1;
+            stretches.forEach((stretch, index) => {
+                const length = stretch.end - stretch.start;
+                const count = counts[index];
+                const base = Math.floor(length / count);
+                let remainder = length % count;
+                let cursorInStretch = stretch.start;
+
+                for (let i = 0; i < count; i++) {
+                    // Hand the leftover minutes to the earlier periods, so no two
+                    // periods in a stretch differ by more than a minute.
+                    const duration = base + (remainder > 0 ? 1 : 0);
+                    if (remainder > 0) remainder -= 1;
+                    const periodEnd = cursorInStretch + duration;
+
+                    periods.push({
+                        name: `period_${periodNumber}`,
+                        start: formatTime(cursorInStretch),
+                        end: formatTime(periodEnd),
+                        duration: duration,
+                        ignored: false
+                    });
+                    periodNumber += 1;
+                    cursorInStretch = periodEnd;
+                }
+            });
+
+            // Break names become period keys, so they have to be unique and must
+            // not collide with the generated period_N names.
+            const usedNames = new Set(periods.map(p => p.name));
+            breaks.forEach(item => {
+                const base = slugify(item.name) || 'break';
+                let name = base;
+                let suffix = 2;
+                while (usedNames.has(name)) {
+                    name = `${base}_${suffix}`;
+                    suffix += 1;
+                }
+                usedNames.add(name);
+
+                periods.push({
+                    name: name,
+                    start: formatTime(item.start),
+                    end: formatTime(item.end),
+                    duration: item.end - item.start,
+                    ignored: true
+                });
+            });
+
+            // The engine walks the periods in the order it is given them.
+            periods.sort((a, b) => parseTime(a.start) - parseTime(b.start));
+            return {periods: periods, error: ''};
+        }
+
+        function refreshSchoolDay() {
+            const result = buildSchoolDay();
+            schoolDayError = result.error;
+
+            const problem = document.getElementById('schoolDayProblem');
+            if (problem) {
+                problem.textContent = result.error;
+                problem.style.display = result.error ? 'block' : 'none';
+            }
+
+            // On a bad entry the last workable day stays on screen, so the
+            // preview never blanks out halfway through an edit.
+            if (!result.error) {
+                periodsList = result.periods;
+                refreshPrefilledPeriodOptions();
+                updatePriorityCheckboxes();
+            }
+
+            renderDayReadout();
+            renderBellPreview();
+        }
+
+        function renderBreaks() {
+            const container = document.getElementById('breaksContainer');
+            if (!container) return;
+
+            container.innerHTML = '';
+            breaksList.forEach((item, index) => {
+                const div = document.createElement('div');
+                div.className = 'break-item';
+                div.innerHTML = `
+                    <div class="grid">
+                        <div>
+                            <label>Name:</label>
+                            <input type="text" class="break-name" value="${escapeHtml(String(item.name || ''))}"
+                                   placeholder="e.g., Lunch" onchange="updateBreak(${index}, 'name', this.value)" required>
+                        </div>
+                        <div>
+                            <label>Starts:</label>
+                            <input type="time" class="break-start" value="${escapeHtml(formatTimeInput(item.start))}"
+                                   onchange="updateBreak(${index}, 'start', this.value)" required>
+                        </div>
+                        <div>
+                            <label>Ends:</label>
+                            <input type="time" class="break-end" value="${escapeHtml(formatTimeInput(item.end))}"
+                                   onchange="updateBreak(${index}, 'end', this.value)" required>
+                        </div>
+                    </div>
+                    <button type="button" class="remove-btn" onclick="removeBreak(${index})">Remove</button>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function updateBreak(index, field, value) {
+            if (!breaksList[index]) return;
+            breaksList[index][field] = value;
+            refreshSchoolDay();
+        }
+
+        function addBreak() {
+            breaksList.push({name: `Break ${breaksList.length + 1}`, start: '', end: ''});
+            renderBreaks();
+            refreshSchoolDay();
+        }
+
+        function removeBreak(index) {
+            breaksList.splice(index, 1);
+            renderBreaks();
+            refreshSchoolDay();
+        }
+
+        function getTeachingPeriods() {
+            return periodsList.filter(p => !p.ignored);
+        }
+
+        function renderDayReadout() {
+            const container = document.getElementById('dayReadout');
+            if (!container) return;
+
+            const teaching = getTeachingPeriods();
+            const teachingPerDay = teaching.reduce((total, p) => total + p.duration, 0);
+            const breakPerDay = periodsList
+                .filter(p => p.ignored)
+                .reduce((total, p) => total + p.duration, 0);
+            const numDays = getNumDays();
+
+            const cards = [
+                {
+                    value: `${teachingPerDay.toLocaleString()} min`,
+                    label: `Teaching time a day, across ${teaching.length} ${teaching.length === 1 ? 'period' : 'periods'}`
+                },
+                {
+                    value: `${breakPerDay.toLocaleString()} min`,
+                    label: 'Break time a day'
+                },
+                {
+                    value: `${(teachingPerDay + breakPerDay).toLocaleString()} min`,
+                    label: 'Full school day, bell to bell'
+                },
+                {
+                    value: `${(teachingPerDay * numDays).toLocaleString()} min`,
+                    label: `Teaching time over the ${numDays}-day cycle - what the subject minimums draw on`
+                }
+            ];
+
+            container.innerHTML = cards.map(card => `
+                <div class="readout-card">
+                    <div class="value">${escapeHtml(card.value)}</div>
+                    <div class="label">${escapeHtml(card.label)}</div>
+                </div>
+            `).join('');
+        }
+
+        function renderBellPreview() {
+            const container = document.getElementById('bellPreview');
+            if (!container) return;
+
+            container.innerHTML = periodsList.map(period => `
+                <div class="bell-row${period.ignored ? ' is-break' : ''}">
+                    <span class="bell-name">${escapeHtml(formatPeriodLabel(period.name))}</span>
+                    <span class="bell-length">${escapeHtml(period.start)} - ${escapeHtml(period.end)} &middot; ${period.duration} min</span>
+                </div>
+            `).join('');
+        }
+
+        function buildPeriodOptions(selected) {
+            return getTeachingPeriods()
+                .map(period => `<option value="${escapeHtml(period.name)}" ${selected === period.name ? 'selected' : ''}>` +
+                    `${escapeHtml(formatPeriodLabel(period.name))} (${escapeHtml(period.start)}-${escapeHtml(period.end)})</option>`)
+                .join('');
+        }
+
+        function refreshPrefilledPeriodOptions() {
+            const available = new Set(getTeachingPeriods().map(p => p.name));
+            document.querySelectorAll('#prefilledContainer .prefilled-period').forEach(select => {
+                const previousValue = select.value;
+                select.innerHTML = buildPeriodOptions(previousValue);
+                if (available.has(previousValue)) select.value = previousValue;
+            });
+        }
+
         function formatPeriodLabel(periodName) {
             return (periodName || '')
                 .split('_')
@@ -1196,6 +1658,7 @@
 
         function onNumDaysChange() {
             refreshPrefilledDayOptions();
+            renderDayReadout();
         }
         
         function renderSubjects() {
@@ -1310,9 +1773,7 @@
         function addPrefilled(day = '', period = '', activity = '') {
             const container = document.getElementById('prefilledContainer');
             const dayOptions = buildDayOptions(day);
-            const periodOptions = PERIOD_OPTIONS.map(option =>
-                `<option value="${option.value}" ${period === option.value ? 'selected' : ''}>${option.label}</option>`
-            ).join('');
+            const periodOptions = buildPeriodOptions(period);
             
             const div = document.createElement('div');
             div.className = 'prefilled-item';
@@ -1340,85 +1801,89 @@
             container.appendChild(div);
         }
         
-        function updatePriorityCheckboxes() {
-            const instructionalPeriods = periodsList.filter(p => !p.ignored);
-            
-            // Morning periods checkboxes
-            const morningContainer = document.getElementById('morningPeriodsContainer');
-            morningContainer.innerHTML = '';
-            instructionalPeriods.forEach(period => {
+        function readCheckedValues(containerId) {
+            return new Set(
+                Array.from(document.querySelectorAll(`#${containerId} input:checked`))
+                    .map(checkbox => checkbox.value)
+            );
+        }
+
+        function renderCheckboxGroup(containerId, idPrefix, items, isChecked) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            container.innerHTML = '';
+            items.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'checkbox-item';
                 div.innerHTML = `
-                    <input type="checkbox" id="morning_${period.name}" value="${period.name}">
-                    <label for="morning_${period.name}">${formatPeriodLabel(period.name)}</label>
+                    <input type="checkbox" id="${idPrefix}_${escapeHtml(item.value)}" value="${escapeHtml(item.value)}"
+                           ${isChecked(item) ? 'checked' : ''}>
+                    <label for="${idPrefix}_${escapeHtml(item.value)}">${escapeHtml(item.label)}</label>
                 `;
-                morningContainer.appendChild(div);
-            });
-            
-            // Set default morning periods (first 4 instructional periods)
-            instructionalPeriods.slice(0, 4).forEach(period => {
-                const checkbox = document.getElementById(`morning_${period.name}`);
-                if (checkbox) checkbox.checked = true;
-            });
-            
-            // Afternoon periods checkboxes
-            const afternoonContainer = document.getElementById('afternoonPeriodsContainer');
-            afternoonContainer.innerHTML = '';
-            instructionalPeriods.forEach(period => {
-                const div = document.createElement('div');
-                div.className = 'checkbox-item';
-                div.innerHTML = `
-                    <input type="checkbox" id="afternoon_${period.name}" value="${period.name}">
-                    <label for="afternoon_${period.name}">${formatPeriodLabel(period.name)}</label>
-                `;
-                afternoonContainer.appendChild(div);
-            });
-            
-            // Set default afternoon periods (remaining instructional periods)
-            instructionalPeriods.slice(4).forEach(period => {
-                const checkbox = document.getElementById(`afternoon_${period.name}`);
-                if (checkbox) checkbox.checked = true;
-            });
-            
-            // Morning subject priorities
-            const morningSubjContainer = document.getElementById('morningSubjectsContainer');
-            morningSubjContainer.innerHTML = '';
-            subjectsList.forEach(subject => {
-                const div = document.createElement('div');
-                div.className = 'checkbox-item';
-                div.innerHTML = `
-                    <input type="checkbox" id="mornsubj_${subject.name}" value="${subject.name}">
-                    <label for="mornsubj_${subject.name}">${subject.name}</label>
-                `;
-                morningSubjContainer.appendChild(div);
-            });
-            
-            // Set default morning subjects (ELAL, Math if they exist)
-            ['ELAL', 'Math'].forEach(name => {
-                const checkbox = document.getElementById(`mornsubj_${name}`);
-                if (checkbox) checkbox.checked = true;
-            });
-            
-            // Afternoon subject priorities
-            const afternoonSubjContainer = document.getElementById('afternoonSubjectsContainer');
-            afternoonSubjContainer.innerHTML = '';
-            subjectsList.forEach(subject => {
-                const div = document.createElement('div');
-                div.className = 'checkbox-item';
-                div.innerHTML = `
-                    <input type="checkbox" id="aftsubj_${subject.name}" value="${subject.name}">
-                    <label for="aftsubj_${subject.name}">${subject.name}</label>
-                `;
-                afternoonSubjContainer.appendChild(div);
+                container.appendChild(div);
             });
         }
+
+        /**
+         * Rebuild the priority checkboxes, keeping whatever is already ticked.
+         * Editing the bell times or the subjects rebuilds these lists, so the
+         * teacher's choices have to survive it. Only genuinely new periods fall
+         * back to a default, and they go by their own start time.
+         */
+        function updatePriorityCheckboxes() {
+            const previousMorning = readCheckedValues('morningPeriodsContainer');
+            const previousAfternoon = readCheckedValues('afternoonPeriodsContainer');
+            const previousMorningSubjects = readCheckedValues('morningSubjectsContainer');
+            const previousAfternoonSubjects = readCheckedValues('afternoonSubjectsContainer');
+
+            const startsInMorning = period => (parseTime(period.start) ?? 0) < MIDDAY_MINUTES;
+            const ruledOn = new Set([...previousMorning, ...previousAfternoon]);
+            const periodItems = getTeachingPeriods().map(period => ({
+                value: period.name,
+                label: `${formatPeriodLabel(period.name)} (${period.start})`,
+                period: period
+            }));
+
+            const useDefaults = !priorityDefaultsApplied;
+            renderCheckboxGroup('morningPeriodsContainer', 'morning', periodItems, item =>
+                (useDefaults || !ruledOn.has(item.value))
+                    ? startsInMorning(item.period)
+                    : previousMorning.has(item.value)
+            );
+            renderCheckboxGroup('afternoonPeriodsContainer', 'afternoon', periodItems, item =>
+                (useDefaults || !ruledOn.has(item.value))
+                    ? !startsInMorning(item.period)
+                    : previousAfternoon.has(item.value)
+            );
+
+            const subjectItems = subjectsList.map(subject => ({value: subject.name, label: subject.name}));
+            renderCheckboxGroup('morningSubjectsContainer', 'mornsubj', subjectItems, item =>
+                useDefaults
+                    ? ['ELAL', 'Math'].includes(item.value)
+                    : previousMorningSubjects.has(item.value)
+            );
+            renderCheckboxGroup('afternoonSubjectsContainer', 'aftsubj', subjectItems, item =>
+                useDefaults ? false : previousAfternoonSubjects.has(item.value)
+            );
+
+            if (subjectItems.length) priorityDefaultsApplied = true;
+        }
+
         
         document.getElementById('scheduleForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
             document.getElementById('error').style.display = 'none';
             if (!validateSubjectRequirementInputs()) {
+                return;
+            }
+
+            // The bell times drive every period, so they have to work first.
+            refreshSchoolDay();
+            if (schoolDayError) {
+                document.getElementById('error').textContent = `Error: ${schoolDayError}`;
+                document.getElementById('error').style.display = 'block';
                 return;
             }
             

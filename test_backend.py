@@ -171,6 +171,59 @@ def test_prefilled_respected():
             )
 
 
+@test("pre-filled subject time counts against that subject's minimums (bug 6)")
+def test_prefilled_counts_toward_demand():
+    # Every pre-filled slot here is a real subject, so its minutes are both
+    # removed from the available pool and credited to the subject. Charging
+    # them twice used to reject this timetable even though it schedules fine.
+    config = build(
+        max_per_day=0,
+        pre_filled={
+            "Day 1": [["period_2", "Math"]],
+            "Day 2": [["period_7", "Math"]],
+            "Day 4": [["period_4", "Math"]],
+            "Day 5": [["period_2", "Math"]],
+            "Day 6": [["period_7", "Math"]],
+        },
+        subject_requirements={
+            "ELAL": {"min_per_block": 10, "min_per_day": 20, "min_per_cycle": 700},
+            "Math": {"min_per_block": 10, "min_per_day": 20, "min_per_cycle": 500},
+            "Science": {"min_per_block": 10, "min_per_day": 10, "min_per_cycle": 250},
+            "Social": {"min_per_block": 10, "min_per_day": 10, "min_per_cycle": 250},
+        },
+        morning_priority_subjects=["ELAL", "Math"],
+    )
+    generator = run(config)
+    summary = generator.get_summary()
+
+    assert_invariants(generator, "prefilled-demand")
+    check(not summary["unmet_cycle"], f"cycle minimums unmet: {summary['unmet_cycle']}")
+    print(f"    1700 min of minimums fitted into {summary['total_available']} min available")
+
+
+@test("a pre-filled subject block covers that day's minimum for it (bug 6)")
+def test_prefilled_covers_daily_minimum():
+    # Day 1 period_2 is 49 min of Math, which already exceeds Math's 45 min
+    # daily minimum - the day only has to find room for the other subjects.
+    config = build(
+        max_per_day=0,
+        pre_filled={"Day 1": [["period_2", "Math"]]},
+        subject_requirements={
+            "ELAL": {"min_per_block": 10, "min_per_day": 120, "min_per_cycle": 720},
+            "Math": {"min_per_block": 10, "min_per_day": 45, "min_per_cycle": 270},
+            "Science": {"min_per_block": 10, "min_per_day": 100, "min_per_cycle": 600},
+        },
+        morning_priority_subjects=["ELAL", "Math"],
+    )
+    generator = run(config)
+    summary = generator.get_summary()
+
+    assert_invariants(generator, "prefilled-daily")
+    check(not summary["unmet_daily"], f"daily minimums unmet: {summary['unmet_daily']}")
+    got = summary["daily_totals"]["Day 1"]["Math"]
+    check(got >= 45, f"Day 1 Math got {got} min, needs 45")
+
+
 @test("daily minimums are honoured even above the cycle minimum (bug 2)")
 def test_daily_minimum_not_capped_by_cycle():
     config = build()

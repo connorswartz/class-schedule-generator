@@ -23,6 +23,11 @@ Music on Day 2 - and fills the remaining minutes with subjects so that:
 If the settings make that impossible, it says so before generating, with the
 numbers. If something is merely tight, it generates and reports what fell short.
 
+A pre-filled activity takes its whole period out of the available pool. When it
+is named after a subject those minutes are credited to that subject, so the
+capacity check takes them off that subject's demand too - counting them on both
+sides would reject timetables that in fact work.
+
 ## How it works
 
 ### Files
@@ -89,10 +94,27 @@ Placement is chosen by score. The weights are constants at the top of
 
 The UI shows these as red and yellow panels above the results.
 
+## The school day
+
+The UI does not hold a fixed list of periods. The teacher gives it the bell
+times - when school starts, when it ends, how many teaching periods they want,
+and the breaks that are always in the same place. Everything the breaks do not
+cover is teaching time, split into one or more stretches, and the periods are
+shared out across those stretches in proportion to how long each one is. Any
+minutes left over after an even split go to the earlier periods, so no two
+periods in a stretch differ by more than a minute.
+
+The page shows the resulting bell schedule and the running totals as they are
+edited, including the teaching minutes across the whole cycle - the pool that
+the subject minimums draw on.
+
+Breaks become ignored periods, keyed by a slug of their name (`Lunch` ->
+`lunch`), so the engine reserves the slot and never schedules into it.
+
 ## The default configuration
 
 The UI ships with the real timetable: a 6-day cycle, 8:41-15:10, seven teaching
-periods (43/49/50/49/49/30/50 min) plus snack, lunch and recess.
+periods plus snack, lunch and recess - 320 teaching minutes a day.
 
 | Subject | Min/block | Min/day | Min/cycle |
 |---|---|---|---|

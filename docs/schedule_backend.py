@@ -245,14 +245,30 @@ class ScheduleGenerator:
                 )
 
         # --- overall capacity ---------------------------------------------
+        # A pre-filled activity takes its whole period out of the pool. When the
+        # activity is named after a subject, initialize_schedule() credits those
+        # minutes to that subject, so they have to come off its demand as well -
+        # otherwise the block is charged twice and timetables that would in fact
+        # work get rejected.
         available = sum(self.periods[p][2] for p in teaching) * num_days
+        cycle_credit = {subject: 0 for subject in self.subject_requirements}
+        daily_credit = {day: {} for day in self.days}
         for day, entries in self.pre_filled.items():
-            for period, _activity in entries:
-                available -= self.periods[period][2]
+            for period, activity in entries:
+                duration = self.periods[period][2]
+                available -= duration
+                if activity in self.subject_requirements:
+                    cycle_credit[activity] += duration
+                    day_credit = daily_credit[day]
+                    day_credit[activity] = day_credit.get(activity, 0) + duration
 
         demand = sum(
-            max(req['min_per_cycle'], req['min_per_day'] * num_days)
-            for req in self.subject_requirements.values()
+            max(
+                0,
+                max(req['min_per_cycle'], req['min_per_day'] * num_days)
+                - cycle_credit[subject],
+            )
+            for subject, req in self.subject_requirements.items()
         )
         if demand > available:
             errors.append(
@@ -261,14 +277,17 @@ class ScheduleGenerator:
                 f"or remove a pre-filled activity."
             )
 
-        # Each individual day must also have room for every daily minimum.
+        # Each individual day must also have room for every daily minimum, less
+        # whatever that day's pre-filled activities already cover.
         day_capacity = sum(self.periods[p][2] for p in teaching)
-        daily_demand = sum(
-            req['min_per_day'] for req in self.subject_requirements.values()
-        )
         for day in self.days:
+            credited = daily_credit[day]
             capacity = day_capacity - sum(
                 self.periods[period][2] for period, _a in self.pre_filled.get(day, [])
+            )
+            daily_demand = sum(
+                max(0, req['min_per_day'] - credited.get(subject, 0))
+                for subject, req in self.subject_requirements.items()
             )
             if daily_demand > capacity:
                 errors.append(
