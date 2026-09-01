@@ -107,8 +107,11 @@ however the rows happen to be arranged in the form. Breaks become ignored
 periods, keyed by a slug of their name (`Lunch` -> `lunch`), so the engine
 reserves the slot and never schedules into it.
 
-The page adds up the totals as they are edited, including the teaching minutes
-across the whole cycle - the pool the subject minimums draw on.
+The page adds up the totals as they are edited and shows the whole chain:
+teaching minutes across the cycle, the minutes pre-filled activities book out
+of that, and what is left for the subject minimums. That last figure is the one
+the capacity check reports, so a rejection can be traced back to numbers
+already on screen.
 
 A day is rejected outright when it contradicts itself: a period or break
 outside the outer bells, ending before it starts, or landing on top of another
@@ -116,11 +119,6 @@ one. Time that no period or break covers is different - it is reported, with
 the gaps named, and otherwise left alone. That is often deliberate (passing
 time, assembly), and guessing at it would mean changing a number the teacher
 typed.
-
-**Fill Evenly** is the one thing that ever picks a period length: give it a
-count and it lays that many periods out evenly in the gaps between the breaks,
-as a starting point for someone with no bell schedule to copy. It only runs
-when the button is pressed.
 
 ## The default configuration
 

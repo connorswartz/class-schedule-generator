@@ -900,29 +900,6 @@
             font-weight: 500;
         }
 
-        .even-split {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            gap: 10px;
-            margin-top: 14px;
-            padding-top: 14px;
-            border-top: 1px solid #273656;
-            color: var(--muted);
-            font-size: 0.88rem;
-        }
-
-        .even-split input[type="number"] {
-            width: 80px;
-            margin: 0;
-            text-align: center;
-            font-weight: 700;
-        }
-
-        .even-split .add-btn {
-            margin: 0;
-        }
-
         .school-day-notice {
             display: none;
             background: #3b2c10;
@@ -1042,12 +1019,6 @@
                     <p class="help-text" style="margin-bottom: 12px;">Straight off your bell schedule - these are the times, exactly as they are. Periods are numbered in time order.</p>
                     <div id="periodsContainer"></div>
                     <button type="button" class="add-btn" onclick="addPeriodRow()">+ Add Period</button>
-                    <div class="even-split">
-                        <span>Starting from scratch? Lay out</span>
-                        <input type="number" id="evenSplitCount" min="1" max="16" value="7" aria-label="Number of periods to lay out evenly">
-                        <span>periods evenly between the breaks:</span>
-                        <button type="button" class="add-btn" onclick="fillPeriodsEvenly()">Fill Evenly</button>
-                    </div>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 0;">
@@ -1597,112 +1568,6 @@
             refreshSchoolDay();
         }
 
-        /**
-         * Lay N periods out evenly in the gaps the breaks leave behind, as a
-         * starting point for someone who has not got a bell schedule to copy.
-         * This is the only thing that ever picks a period length, and it only
-         * runs when the button is pressed.
-         */
-        function fillPeriodsEvenly() {
-            const {start, end} = getSchoolDayInputs();
-            const countRaw = parseInt(document.getElementById('evenSplitCount').value, 10);
-            const count = Number.isNaN(countRaw) ? 0 : countRaw;
-
-            const problem = document.getElementById('schoolDayProblem');
-            const refuse = message => {
-                if (!problem) return;
-                problem.textContent = message;
-                problem.style.display = 'block';
-            };
-
-            if (start === null || end === null || end <= start) {
-                refuse('Set a start and end time for the school day first.');
-                return;
-            }
-            if (count < 1) {
-                refuse('Choose how many periods to lay out.');
-                return;
-            }
-
-            const breaks = [];
-            for (const item of breaksList) {
-                const breakStart = parseTime(item.start);
-                const breakEnd = parseTime(item.end);
-                if (breakStart === null || breakEnd === null || breakEnd <= breakStart) {
-                    refuse('Fix the break times before filling the periods in.');
-                    return;
-                }
-                breaks.push({start: breakStart, end: breakEnd});
-            }
-            breaks.sort((a, b) => a.start - b.start);
-
-            const stretches = [];
-            let cursor = start;
-            breaks.forEach(item => {
-                if (item.start > cursor) stretches.push({start: cursor, end: item.start});
-                cursor = Math.max(cursor, item.end);
-            });
-            if (end > cursor) stretches.push({start: cursor, end: end});
-
-            if (!stretches.length) {
-                refuse('The breaks cover the whole day, so there is no teaching time to divide.');
-                return;
-            }
-
-            const teachingMinutes = stretches.reduce((total, s) => total + (s.end - s.start), 0);
-            if (count < stretches.length) {
-                refuse(
-                    `The breaks split the day into ${stretches.length} stretches, ` +
-                    `so this needs at least ${stretches.length} periods.`
-                );
-                return;
-            }
-            if (count > teachingMinutes) {
-                refuse(`There are only ${teachingMinutes} min to divide, so ${count} periods will not fit.`);
-                return;
-            }
-
-            const counts = stretches.map(() => 1);
-            const fairShare = stretches.map(s => (s.end - s.start) / teachingMinutes * count);
-            for (let spare = count - stretches.length; spare > 0; spare--) {
-                let bestIndex = -1;
-                let bestGap = -Infinity;
-                stretches.forEach((s, index) => {
-                    if (counts[index] >= s.end - s.start) return;
-                    const gap = fairShare[index] - counts[index];
-                    if (gap > bestGap) {
-                        bestGap = gap;
-                        bestIndex = index;
-                    }
-                });
-                if (bestIndex === -1) break;
-                counts[bestIndex] += 1;
-            }
-
-            const rows = [];
-            stretches.forEach((stretch, index) => {
-                const length = stretch.end - stretch.start;
-                const perPeriod = Math.floor(length / counts[index]);
-                let remainder = length % counts[index];
-                let cursorInStretch = stretch.start;
-
-                for (let i = 0; i < counts[index]; i++) {
-                    const duration = perPeriod + (remainder > 0 ? 1 : 0);
-                    if (remainder > 0) remainder -= 1;
-                    const periodEnd = cursorInStretch + duration;
-                    rows.push({
-                        start: formatTimeInput(formatTime(cursorInStretch)),
-                        end: formatTimeInput(formatTime(periodEnd))
-                    });
-                    cursorInStretch = periodEnd;
-                }
-            });
-
-            periodRows = rows;
-            renderPeriods();
-            refreshSchoolDay();
-        }
-
         // ---- breaks ---------------------------------------------------------
         function renderBreaks() {
             const container = document.getElementById('breaksContainer');
@@ -1771,6 +1636,8 @@
             const {start, end} = getSchoolDayInputs();
             const fullDay = start !== null && end !== null && end > start ? end - start : teachingPerDay + breakPerDay;
             const numDays = getNumDays();
+            const cycleTeaching = teachingPerDay * numDays;
+            const prefilled = getPrefilledMinutes();
 
             const cards = [
                 {
@@ -1786,10 +1653,24 @@
                     label: 'Full school day, bell to bell'
                 },
                 {
-                    value: `${(teachingPerDay * numDays).toLocaleString()} min`,
-                    label: `Teaching time over the ${numDays}-day cycle - what the subject minimums draw on`
+                    value: `${cycleTeaching.toLocaleString()} min`,
+                    label: `Teaching time over the ${numDays}-day cycle`
                 }
             ];
+
+            // Pre-filled activities come off that total before the subject
+            // minimums get a look at it, so show the subtraction rather than
+            // leaving two different numbers on screen with no link between them.
+            if (prefilled > 0) {
+                cards.push({
+                    value: `-${prefilled.toLocaleString()} min`,
+                    label: 'Booked by pre-filled activities - each one takes its whole period'
+                });
+                cards.push({
+                    value: `${Math.max(0, cycleTeaching - prefilled).toLocaleString()} min`,
+                    label: 'Left for the subject minimums - the figure the generator checks against'
+                });
+            }
 
             container.innerHTML = cards.map(card => `
                 <div class="readout-card">
@@ -2005,24 +1886,57 @@
                 <div class="grid">
                     <div>
                         <label>Day:</label>
-                        <select class="prefilled-day" required>
+                        <select class="prefilled-day" onchange="renderDayReadout()" required>
                             ${dayOptions}
                         </select>
                     </div>
                     <div>
                         <label>Period:</label>
-                        <select class="prefilled-period" required>
+                        <select class="prefilled-period" onchange="renderDayReadout()" required>
                             ${periodOptions}
                         </select>
                     </div>
                     <div>
                         <label>Activity:</label>
-                        <input type="text" class="prefilled-activity" value="${activity}" placeholder="e.g., PE" required>
+                        <input type="text" class="prefilled-activity" value="${activity}" placeholder="e.g., PE"
+                               onchange="renderDayReadout()" required>
                     </div>
                 </div>
-                <button type="button" class="remove-btn" onclick="this.parentElement.remove()">Remove</button>
+                <button type="button" class="remove-btn" onclick="removePrefilled(this)">Remove</button>
             `;
             container.appendChild(div);
+            renderDayReadout();
+        }
+
+        function removePrefilled(button) {
+            button.parentElement.remove();
+            renderDayReadout();
+        }
+
+        /**
+         * Minutes the pre-filled activities take out of the pool. A pre-filled
+         * activity occupies its whole period whatever it is, so the period's
+         * full length comes off - and two activities in the same slot on the
+         * same day are one slot, matching what the engine keeps.
+         */
+        function getPrefilledMinutes() {
+            const durations = new Map(periodsList.map(period => [period.name, period.duration]));
+            const seen = new Set();
+            let total = 0;
+
+            document.querySelectorAll('#prefilledContainer .prefilled-item').forEach(item => {
+                const day = item.querySelector('.prefilled-day').value.trim();
+                const period = item.querySelector('.prefilled-period').value.trim();
+                const activity = item.querySelector('.prefilled-activity').value.trim();
+                if (!day || !period || !activity) return;
+
+                const key = `${day}|${period}`;
+                if (seen.has(key)) return;
+                seen.add(key);
+                total += durations.get(period) || 0;
+            });
+
+            return total;
         }
         
         function readCheckedValues(containerId) {
