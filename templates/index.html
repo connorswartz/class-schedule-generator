@@ -869,6 +869,72 @@
             font-weight: 500;
         }
 
+        .period-item {
+            background: linear-gradient(165deg, #0d1628 0%, #101a30 100%);
+            padding: 14px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            border: 1px solid #273656;
+        }
+
+        .period-item .grid {
+            margin-bottom: 10px;
+            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        }
+
+        .period-badge {
+            display: flex;
+            align-items: center;
+            height: 42px;
+            padding: 8px 12px;
+            border-radius: 10px;
+            background: #0a1425;
+            border: 1px solid #273656;
+            color: #dbe6ff;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .period-badge.is-empty {
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .even-split {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid #273656;
+            color: var(--muted);
+            font-size: 0.88rem;
+        }
+
+        .even-split input[type="number"] {
+            width: 80px;
+            margin: 0;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .even-split .add-btn {
+            margin: 0;
+        }
+
+        .school-day-notice {
+            display: none;
+            background: #3b2c10;
+            border: 1px solid #7a5c17;
+            color: #f5d999;
+            border-radius: 10px;
+            padding: 11px 15px;
+            margin-top: 14px;
+            font-size: 0.88rem;
+            line-height: 1.45;
+        }
+
         .school-day-problem {
             display: none;
             background: #3b1220;
@@ -958,7 +1024,7 @@
             <!-- School Day -->
             <div class="section">
                 <h2 class="section-title">School Day</h2>
-                <p class="help-text" style="margin-bottom: 15px;">Set the bell times once. Whatever is left between the breaks is split into teaching periods, and the totals below update as you go.</p>
+                <p class="help-text" style="margin-bottom: 15px;">Type your bell schedule in once. The totals below add themselves up as you go.</p>
 
                 <div class="school-day-grid">
                     <div class="form-group">
@@ -969,20 +1035,30 @@
                         <label for="schoolEnd">School Ends:</label>
                         <input type="time" id="schoolEnd" value="15:10" onchange="refreshSchoolDay()" required>
                     </div>
-                    <div class="form-group">
-                        <label for="periodCount">Teaching Periods per Day:</label>
-                        <input type="number" id="periodCount" min="1" max="16" value="7" onchange="refreshSchoolDay()" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Teaching Periods:</label>
+                    <p class="help-text" style="margin-bottom: 12px;">Straight off your bell schedule - these are the times, exactly as they are. Periods are numbered in time order.</p>
+                    <div id="periodsContainer"></div>
+                    <button type="button" class="add-btn" onclick="addPeriodRow()">+ Add Period</button>
+                    <div class="even-split">
+                        <span>Starting from scratch? Lay out</span>
+                        <input type="number" id="evenSplitCount" min="1" max="16" value="7" aria-label="Number of periods to lay out evenly">
+                        <span>periods evenly between the breaks:</span>
+                        <button type="button" class="add-btn" onclick="fillPeriodsEvenly()">Fill Evenly</button>
                     </div>
                 </div>
 
                 <div class="form-group" style="margin-bottom: 0;">
                     <label>Breaks:</label>
-                    <p class="help-text" style="margin-bottom: 12px;">Lunch, recess, and anything else that is never teaching time. These stay put; periods are built around them.</p>
+                    <p class="help-text" style="margin-bottom: 12px;">Lunch, recess, and anything else that is never teaching time.</p>
                     <div id="breaksContainer"></div>
                     <button type="button" class="add-btn" onclick="addBreak()">+ Add Break</button>
                 </div>
 
                 <div id="schoolDayProblem" class="school-day-problem"></div>
+                <div id="schoolDayNotice" class="school-day-notice"></div>
 
                 <div class="day-readout" id="dayReadout"></div>
                 <div class="bell-preview" id="bellPreview"></div>
@@ -1104,10 +1180,19 @@
         let periodsList = [];
         let subjectsList = [];
         const DAY_COUNT_OPTIONS = Array.from({length: 12}, (_, i) => i + 1);
-        // The school day is described by its bell times, not by a fixed list of
-        // periods: start, end, and the breaks that are always in the same place.
-        // Everything else is teaching time, divided into `periodCount` periods.
-        const DEFAULT_SCHOOL_DAY = {start: '08:41', end: '15:10', periodCount: 7};
+        // The school day is whatever the teacher types: the two outer bells, the
+        // periods, and the breaks. Nothing here is calculated - these are just the
+        // times the app opens with, and every one of them is editable.
+        const DEFAULT_SCHOOL_DAY = {start: '08:41', end: '15:10'};
+        const DEFAULT_PERIOD_ROWS = [
+            {start: '08:41', end: '09:24'},
+            {start: '09:24', end: '10:13'},
+            {start: '10:18', end: '11:08'},
+            {start: '11:08', end: '11:57'},
+            {start: '12:41', end: '13:30'},
+            {start: '13:50', end: '14:20'},
+            {start: '14:20', end: '15:10'}
+        ];
         const DEFAULT_BREAKS = [
             {name: 'Snack', start: '10:13', end: '10:18'},
             {name: 'Lunch', start: '11:57', end: '12:41'},
@@ -1115,6 +1200,7 @@
         ];
         // Periods starting before this are "morning" unless the teacher says otherwise.
         const MIDDAY_MINUTES = 12 * 60;
+        let periodRows = [];
         let breaksList = [];
         let schoolDayError = '';
         let priorityDefaultsApplied = false;
@@ -1125,7 +1211,11 @@
         };
         
         function initializeDefaults() {
+            document.getElementById('schoolStart').value = DEFAULT_SCHOOL_DAY.start;
+            document.getElementById('schoolEnd').value = DEFAULT_SCHOOL_DAY.end;
+            periodRows = DEFAULT_PERIOD_ROWS.map(item => ({...item}));
             breaksList = DEFAULT_BREAKS.map(item => ({...item}));
+            renderPeriods();
             renderBreaks();
             refreshSchoolDay();
             renderDayCountSelector();
@@ -1213,7 +1303,7 @@
             return hours * 60 + minutes;
         }
 
-        // Times shown on the schedule keep the existing 8:41 / 15:10 style.
+        // Times shown on the schedule keep the familiar 8:41 / 15:10 style.
         function formatTime(totalMinutes) {
             const hours = Math.floor(totalMinutes / 60);
             return `${hours}:${String(totalMinutes % 60).padStart(2, '0')}`;
@@ -1235,24 +1325,25 @@
         }
 
         function getSchoolDayInputs() {
-            const periodsRaw = parseInt(document.getElementById('periodCount').value, 10);
             return {
                 start: parseTime(document.getElementById('schoolStart').value),
-                end: parseTime(document.getElementById('schoolEnd').value),
-                periodCount: Number.isNaN(periodsRaw) ? 0 : periodsRaw
+                end: parseTime(document.getElementById('schoolEnd').value)
             };
         }
 
         /**
-         * Turn the bell times into the period list the engine expects.
-         * Breaks are fixed points; the gaps between them are teaching stretches,
-         * and the periods are shared out across those stretches in proportion to
-         * how long each one is. Returns {periods, error} - a non-empty `error` is
-         * a message for the teacher and means `periods` should not be used.
+         * Assemble the period list the engine expects out of the times the
+         * teacher typed. Nothing here invents a length: every period is exactly
+         * the span entered for it, and periods are numbered in time order.
+         *
+         * Returns {periods, error, notices}. A non-empty `error` means the day
+         * contradicts itself and `periods` should not be used. `notices` are
+         * things worth mentioning that are not wrong - chiefly time inside the
+         * school day that no period or break accounts for.
          */
         function buildSchoolDay() {
-            const {start, end, periodCount} = getSchoolDayInputs();
-            const fail = message => ({periods: [], error: message});
+            const {start, end} = getSchoolDayInputs();
+            const fail = message => ({periods: [], error: message, notices: []});
 
             if (start === null || end === null) {
                 return fail('Enter a start time and an end time for the school day.');
@@ -1260,11 +1351,33 @@
             if (end <= start) {
                 return fail('School has to end after it starts.');
             }
-            if (periodCount < 1) {
-                return fail('The day needs at least one teaching period.');
+
+            // Periods and breaks are both just spans of the day, and the same
+            // rules apply to each: inside the day, forwards, and not on top of
+            // anything else.
+            const slots = [];
+
+            for (let i = 0; i < periodRows.length; i++) {
+                const row = periodRows[i];
+                const label = `Period ${i + 1} in the list`;
+                const rowStart = parseTime(row.start);
+                const rowEnd = parseTime(row.end);
+
+                if (rowStart === null || rowEnd === null) {
+                    return fail(`${label} needs both a start time and an end time.`);
+                }
+                if (rowEnd <= rowStart) {
+                    return fail(`${label} has to end after it starts.`);
+                }
+                if (rowStart < start || rowEnd > end) {
+                    return fail(
+                        `${label} (${formatTime(rowStart)}-${formatTime(rowEnd)}) falls outside ` +
+                        `the ${formatTime(start)}-${formatTime(end)} school day.`
+                    );
+                }
+                slots.push({kind: 'period', label: label, start: rowStart, end: rowEnd, row: row});
             }
 
-            const breaks = [];
             for (const item of breaksList) {
                 const label = String(item.name || '').trim() || 'Break';
                 const breakStart = parseTime(item.start);
@@ -1281,51 +1394,277 @@
                         `"${label}" falls outside the ${formatTime(start)}-${formatTime(end)} school day.`
                     );
                 }
-                breaks.push({name: label, start: breakStart, end: breakEnd});
+                slots.push({kind: 'break', label: `"${label}"`, name: label, start: breakStart, end: breakEnd});
             }
 
-            breaks.sort((a, b) => a.start - b.start);
-            for (let i = 1; i < breaks.length; i++) {
-                if (breaks[i].start < breaks[i - 1].end) {
-                    return fail(`"${breaks[i - 1].name}" and "${breaks[i].name}" overlap.`);
+            if (!slots.some(slot => slot.kind === 'period')) {
+                return fail('Add at least one teaching period.');
+            }
+
+            slots.sort((a, b) => a.start - b.start || a.end - b.end);
+            for (let i = 1; i < slots.length; i++) {
+                if (slots[i].start < slots[i - 1].end) {
+                    return fail(
+                        `${slots[i - 1].label} (${formatTime(slots[i - 1].start)}-${formatTime(slots[i - 1].end)}) ` +
+                        `and ${slots[i].label} (${formatTime(slots[i].start)}-${formatTime(slots[i].end)}) overlap.`
+                    );
                 }
             }
 
-            // Whatever the breaks leave behind is teaching time, one stretch per
-            // gap. A break sitting flush against another one, or against the
-            // start or end of the day, simply contributes no stretch.
+            // Numbering follows the clock, so Period 1 is always the first of
+            // the day however the rows happen to be ordered in the form.
+            const periods = [];
+            const usedNames = new Set();
+            let periodNumber = 1;
+
+            slots.forEach(slot => {
+                if (slot.kind === 'period') {
+                    const name = `period_${periodNumber}`;
+                    periodNumber += 1;
+                    usedNames.add(name);
+                    slot.row.assignedName = name;
+                    periods.push({
+                        name: name,
+                        start: formatTime(slot.start),
+                        end: formatTime(slot.end),
+                        duration: slot.end - slot.start,
+                        ignored: false
+                    });
+                }
+            });
+
+            // Break names become period keys, so they have to be unique and must
+            // not collide with the generated period_N names.
+            slots.forEach(slot => {
+                if (slot.kind !== 'break') return;
+                const base = slugify(slot.name) || 'break';
+                let name = base;
+                let suffix = 2;
+                while (usedNames.has(name)) {
+                    name = `${base}_${suffix}`;
+                    suffix += 1;
+                }
+                usedNames.add(name);
+                periods.push({
+                    name: name,
+                    start: formatTime(slot.start),
+                    end: formatTime(slot.end),
+                    duration: slot.end - slot.start,
+                    ignored: true
+                });
+            });
+
+            periods.sort((a, b) => parseTime(a.start) - parseTime(b.start));
+
+            // Anything the periods and breaks do not cover is simply left out of
+            // the timetable. That is often deliberate - passing time, assembly -
+            // so it is worth saying out loud, but it is not an error.
+            const notices = [];
+            const covered = slots.reduce((total, slot) => total + (slot.end - slot.start), 0);
+            const unaccounted = (end - start) - covered;
+            if (unaccounted > 0) {
+                const gaps = [];
+                let cursor = start;
+                slots.forEach(slot => {
+                    if (slot.start > cursor) gaps.push(`${formatTime(cursor)}-${formatTime(slot.start)}`);
+                    cursor = slot.end;
+                });
+                if (end > cursor) gaps.push(`${formatTime(cursor)}-${formatTime(end)}`);
+
+                notices.push(
+                    `${unaccounted} min of the school day is in no period and no break ` +
+                    `(${gaps.join(', ')}). That time is left out of the timetable.`
+                );
+            }
+
+            return {periods: periods, error: '', notices: notices};
+        }
+
+        function refreshSchoolDay() {
+            const result = buildSchoolDay();
+            schoolDayError = result.error;
+
+            const problem = document.getElementById('schoolDayProblem');
+            if (problem) {
+                problem.textContent = result.error;
+                problem.style.display = result.error ? 'block' : 'none';
+            }
+
+            const notice = document.getElementById('schoolDayNotice');
+            if (notice) {
+                const messages = result.error ? [] : result.notices;
+                notice.textContent = messages.join(' ');
+                notice.style.display = messages.length ? 'block' : 'none';
+            }
+
+            // On a contradictory entry the last workable day stays on screen, so
+            // the preview never blanks out halfway through an edit.
+            if (!result.error) {
+                periodsList = result.periods;
+                refreshPrefilledPeriodOptions();
+                updatePriorityCheckboxes();
+            }
+
+            renderPeriodRowLabels();
+            renderDayReadout();
+            renderBellPreview();
+        }
+
+        // ---- teaching periods ---------------------------------------------
+        function renderPeriods() {
+            const container = document.getElementById('periodsContainer');
+            if (!container) return;
+
+            container.innerHTML = '';
+            periodRows.forEach((row, index) => {
+                const div = document.createElement('div');
+                div.className = 'period-item';
+                div.dataset.index = String(index);
+                div.innerHTML = `
+                    <div class="grid">
+                        <div>
+                            <label>Period:</label>
+                            <div class="period-badge" data-role="name">-</div>
+                        </div>
+                        <div>
+                            <label>Starts:</label>
+                            <input type="time" class="period-start" value="${escapeHtml(formatTimeInput(row.start))}"
+                                   onchange="updatePeriodRow(${index}, 'start', this.value)" required>
+                        </div>
+                        <div>
+                            <label>Ends:</label>
+                            <input type="time" class="period-end" value="${escapeHtml(formatTimeInput(row.end))}"
+                                   onchange="updatePeriodRow(${index}, 'end', this.value)" required>
+                        </div>
+                        <div>
+                            <label>Length:</label>
+                            <div class="period-badge" data-role="length">-</div>
+                        </div>
+                    </div>
+                    <button type="button" class="remove-btn" onclick="removePeriodRow(${index})">Remove</button>
+                `;
+                container.appendChild(div);
+            });
+
+            renderPeriodRowLabels();
+        }
+
+        // The number and length of a row follow from its times, so they are
+        // filled in after the fact rather than typed.
+        function renderPeriodRowLabels() {
+            document.querySelectorAll('#periodsContainer .period-item').forEach(item => {
+                const row = periodRows[Number(item.dataset.index)];
+                const nameCell = item.querySelector('[data-role="name"]');
+                const lengthCell = item.querySelector('[data-role="length"]');
+                if (!row || !nameCell || !lengthCell) return;
+
+                const rowStart = parseTime(row.start);
+                const rowEnd = parseTime(row.end);
+                const valid = rowStart !== null && rowEnd !== null && rowEnd > rowStart;
+
+                nameCell.textContent = row.assignedName ? formatPeriodLabel(row.assignedName) : '-';
+                lengthCell.textContent = valid ? `${rowEnd - rowStart} min` : '-';
+                lengthCell.classList.toggle('is-empty', !valid);
+                nameCell.classList.toggle('is-empty', !row.assignedName);
+            });
+        }
+
+        function updatePeriodRow(index, field, value) {
+            if (!periodRows[index]) return;
+            periodRows[index][field] = value;
+            refreshSchoolDay();
+        }
+
+        function addPeriodRow() {
+            // Start the new row where the day currently runs out, so it usually
+            // only needs an end time.
+            const {end} = getSchoolDayInputs();
+            let latest = null;
+            [...periodRows, ...breaksList].forEach(item => {
+                const itemEnd = parseTime(item.end);
+                if (itemEnd !== null && (latest === null || itemEnd > latest)) latest = itemEnd;
+            });
+
+            const suggestedStart = latest !== null && (end === null || latest < end) ? formatTimeInput(formatTime(latest)) : '';
+            periodRows.push({start: suggestedStart, end: ''});
+            renderPeriods();
+            refreshSchoolDay();
+        }
+
+        function removePeriodRow(index) {
+            periodRows.splice(index, 1);
+            renderPeriods();
+            refreshSchoolDay();
+        }
+
+        /**
+         * Lay N periods out evenly in the gaps the breaks leave behind, as a
+         * starting point for someone who has not got a bell schedule to copy.
+         * This is the only thing that ever picks a period length, and it only
+         * runs when the button is pressed.
+         */
+        function fillPeriodsEvenly() {
+            const {start, end} = getSchoolDayInputs();
+            const countRaw = parseInt(document.getElementById('evenSplitCount').value, 10);
+            const count = Number.isNaN(countRaw) ? 0 : countRaw;
+
+            const problem = document.getElementById('schoolDayProblem');
+            const refuse = message => {
+                if (!problem) return;
+                problem.textContent = message;
+                problem.style.display = 'block';
+            };
+
+            if (start === null || end === null || end <= start) {
+                refuse('Set a start and end time for the school day first.');
+                return;
+            }
+            if (count < 1) {
+                refuse('Choose how many periods to lay out.');
+                return;
+            }
+
+            const breaks = [];
+            for (const item of breaksList) {
+                const breakStart = parseTime(item.start);
+                const breakEnd = parseTime(item.end);
+                if (breakStart === null || breakEnd === null || breakEnd <= breakStart) {
+                    refuse('Fix the break times before filling the periods in.');
+                    return;
+                }
+                breaks.push({start: breakStart, end: breakEnd});
+            }
+            breaks.sort((a, b) => a.start - b.start);
+
             const stretches = [];
             let cursor = start;
             breaks.forEach(item => {
                 if (item.start > cursor) stretches.push({start: cursor, end: item.start});
-                cursor = item.end;
+                cursor = Math.max(cursor, item.end);
             });
             if (end > cursor) stretches.push({start: cursor, end: end});
 
             if (!stretches.length) {
-                return fail('The breaks cover the whole day, so there is no teaching time left.');
+                refuse('The breaks cover the whole day, so there is no teaching time to divide.');
+                return;
             }
 
             const teachingMinutes = stretches.reduce((total, s) => total + (s.end - s.start), 0);
-            if (periodCount < stretches.length) {
-                return fail(
-                    `The breaks split the day into ${stretches.length} teaching stretches, ` +
-                    `so you need at least ${stretches.length} periods.`
+            if (count < stretches.length) {
+                refuse(
+                    `The breaks split the day into ${stretches.length} stretches, ` +
+                    `so this needs at least ${stretches.length} periods.`
                 );
+                return;
             }
-            if (periodCount > teachingMinutes) {
-                return fail(
-                    `There are only ${teachingMinutes} min of teaching time a day, ` +
-                    `so ${periodCount} periods will not fit.`
-                );
+            if (count > teachingMinutes) {
+                refuse(`There are only ${teachingMinutes} min to divide, so ${count} periods will not fit.`);
+                return;
             }
 
-            // Every stretch gets at least one period; the spare periods go to
-            // whichever stretch is furthest below its share of the day, and no
-            // stretch takes more periods than it has minutes.
             const counts = stretches.map(() => 1);
-            const fairShare = stretches.map(s => (s.end - s.start) / teachingMinutes * periodCount);
-            for (let spare = periodCount - stretches.length; spare > 0; spare--) {
+            const fairShare = stretches.map(s => (s.end - s.start) / teachingMinutes * count);
+            for (let spare = count - stretches.length; spare > 0; spare--) {
                 let bestIndex = -1;
                 let bestGap = -Infinity;
                 stretches.forEach((s, index) => {
@@ -1340,83 +1679,31 @@
                 counts[bestIndex] += 1;
             }
 
-            const periods = [];
-            let periodNumber = 1;
+            const rows = [];
             stretches.forEach((stretch, index) => {
                 const length = stretch.end - stretch.start;
-                const count = counts[index];
-                const base = Math.floor(length / count);
-                let remainder = length % count;
+                const perPeriod = Math.floor(length / counts[index]);
+                let remainder = length % counts[index];
                 let cursorInStretch = stretch.start;
 
-                for (let i = 0; i < count; i++) {
-                    // Hand the leftover minutes to the earlier periods, so no two
-                    // periods in a stretch differ by more than a minute.
-                    const duration = base + (remainder > 0 ? 1 : 0);
+                for (let i = 0; i < counts[index]; i++) {
+                    const duration = perPeriod + (remainder > 0 ? 1 : 0);
                     if (remainder > 0) remainder -= 1;
                     const periodEnd = cursorInStretch + duration;
-
-                    periods.push({
-                        name: `period_${periodNumber}`,
-                        start: formatTime(cursorInStretch),
-                        end: formatTime(periodEnd),
-                        duration: duration,
-                        ignored: false
+                    rows.push({
+                        start: formatTimeInput(formatTime(cursorInStretch)),
+                        end: formatTimeInput(formatTime(periodEnd))
                     });
-                    periodNumber += 1;
                     cursorInStretch = periodEnd;
                 }
             });
 
-            // Break names become period keys, so they have to be unique and must
-            // not collide with the generated period_N names.
-            const usedNames = new Set(periods.map(p => p.name));
-            breaks.forEach(item => {
-                const base = slugify(item.name) || 'break';
-                let name = base;
-                let suffix = 2;
-                while (usedNames.has(name)) {
-                    name = `${base}_${suffix}`;
-                    suffix += 1;
-                }
-                usedNames.add(name);
-
-                periods.push({
-                    name: name,
-                    start: formatTime(item.start),
-                    end: formatTime(item.end),
-                    duration: item.end - item.start,
-                    ignored: true
-                });
-            });
-
-            // The engine walks the periods in the order it is given them.
-            periods.sort((a, b) => parseTime(a.start) - parseTime(b.start));
-            return {periods: periods, error: ''};
+            periodRows = rows;
+            renderPeriods();
+            refreshSchoolDay();
         }
 
-        function refreshSchoolDay() {
-            const result = buildSchoolDay();
-            schoolDayError = result.error;
-
-            const problem = document.getElementById('schoolDayProblem');
-            if (problem) {
-                problem.textContent = result.error;
-                problem.style.display = result.error ? 'block' : 'none';
-            }
-
-            // On a bad entry the last workable day stays on screen, so the
-            // preview never blanks out halfway through an edit.
-            if (!result.error) {
-                periodsList = result.periods;
-                refreshPrefilledPeriodOptions();
-                updatePriorityCheckboxes();
-            }
-
-            renderDayReadout();
-            renderBellPreview();
-        }
-
+        // ---- breaks ---------------------------------------------------------
         function renderBreaks() {
             const container = document.getElementById('breaksContainer');
             if (!container) return;
@@ -1467,6 +1754,7 @@
             refreshSchoolDay();
         }
 
+        // ---- totals and preview ---------------------------------------------
         function getTeachingPeriods() {
             return periodsList.filter(p => !p.ignored);
         }
@@ -1480,6 +1768,8 @@
             const breakPerDay = periodsList
                 .filter(p => p.ignored)
                 .reduce((total, p) => total + p.duration, 0);
+            const {start, end} = getSchoolDayInputs();
+            const fullDay = start !== null && end !== null && end > start ? end - start : teachingPerDay + breakPerDay;
             const numDays = getNumDays();
 
             const cards = [
@@ -1492,7 +1782,7 @@
                     label: 'Break time a day'
                 },
                 {
-                    value: `${(teachingPerDay + breakPerDay).toLocaleString()} min`,
+                    value: `${fullDay.toLocaleString()} min`,
                     label: 'Full school day, bell to bell'
                 },
                 {

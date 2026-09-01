@@ -96,25 +96,37 @@ The UI shows these as red and yellow panels above the results.
 
 ## The school day
 
-The UI does not hold a fixed list of periods. The teacher gives it the bell
-times - when school starts, when it ends, how many teaching periods they want,
-and the breaks that are always in the same place. Everything the breaks do not
-cover is teaching time, split into one or more stretches, and the periods are
-shared out across those stretches in proportion to how long each one is. Any
-minutes left over after an even split go to the earlier periods, so no two
-periods in a stretch differ by more than a minute.
+The teacher types their bell schedule in: the two outer bells, then a start and
+an end time for every period and every break. Nothing is inferred. A period is
+exactly as long as the times given for it, which is the only way to represent a
+real timetable - bells are uneven, and any scheme that divides the day up
+evenly gets them wrong.
 
-The page shows the resulting bell schedule and the running totals as they are
-edited, including the teaching minutes across the whole cycle - the pool that
-the subject minimums draw on.
+Periods are numbered in clock order, so Period 1 is always the first of the day
+however the rows happen to be arranged in the form. Breaks become ignored
+periods, keyed by a slug of their name (`Lunch` -> `lunch`), so the engine
+reserves the slot and never schedules into it.
 
-Breaks become ignored periods, keyed by a slug of their name (`Lunch` ->
-`lunch`), so the engine reserves the slot and never schedules into it.
+The page adds up the totals as they are edited, including the teaching minutes
+across the whole cycle - the pool the subject minimums draw on.
+
+A day is rejected outright when it contradicts itself: a period or break
+outside the outer bells, ending before it starts, or landing on top of another
+one. Time that no period or break covers is different - it is reported, with
+the gaps named, and otherwise left alone. That is often deliberate (passing
+time, assembly), and guessing at it would mean changing a number the teacher
+typed.
+
+**Fill Evenly** is the one thing that ever picks a period length: give it a
+count and it lays that many periods out evenly in the gaps between the breaks,
+as a starting point for someone with no bell schedule to copy. It only runs
+when the button is pressed.
 
 ## The default configuration
 
-The UI ships with the real timetable: a 6-day cycle, 8:41-15:10, seven teaching
-periods plus snack, lunch and recess - 320 teaching minutes a day.
+The UI opens with the real timetable: a 6-day cycle, 8:41-15:10, seven teaching
+periods (43/49/50/49/49/30/50 min) plus snack, lunch and recess - 320 teaching
+minutes a day. Every one of those times is editable.
 
 | Subject | Min/block | Min/day | Min/cycle |
 |---|---|---|---|
