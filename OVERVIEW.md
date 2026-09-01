@@ -120,6 +120,23 @@ the gaps named, and otherwise left alone. That is often deliberate (passing
 time, assembly), and guessing at it would mean changing a number the teacher
 typed.
 
+## Activity credits
+
+Some time already counts toward a subject without being taught as it: a
+Learning Commons block toward ELAL, recess and DPA toward PE/Health. The
+`subject_aliases` map says so - activity or break name to the subject it counts
+toward - and those minutes are credited before any scheduling happens, so the
+engine only has to find the rest.
+
+The activity keeps its own name on the timetable and a break stays a break;
+only the tally moves. Matching ignores case and punctuation, so an alias
+written `Learning Commons` matches the period key `learning_commons`. An alias
+pointing at something that is not a subject, or redirecting a subject somewhere
+else, is rejected.
+
+Because a credit lowers what still has to be scheduled, it also lowers the
+demand the capacity check measures - which is what lets a tight cycle fit.
+
 ## The default configuration
 
 The UI opens with the real timetable: a 6-day cycle, 8:41-15:10, seven teaching

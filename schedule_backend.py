@@ -13,6 +13,7 @@ schedule that cannot meet the requirements.
 """
 import csv
 import random
+import re
 from dataclasses import dataclass
 from io import StringIO
 
@@ -27,6 +28,16 @@ W_FRAGMENTATION = 250           # penalty per extra distinct subject in a period
 W_PERIOD_PREFERENCE = 30        # period already "belongs" to this subject
 W_TIME_OF_DAY = 120             # priority subject landing in its preferred half
 W_TIME_OF_DAY_PENALTY = 60      # non-priority subject taking a morning slot
+
+
+def normalise_name(name) -> str:
+    """Fold a name to something two spellings of it can be compared on.
+
+    'Learning Commons', 'learning_commons' and 'LEARNING COMMONS' all come back
+    as 'learning commons', so an alias matches whether it was typed against a
+    pre-filled activity or against a break's period key.
+    """
+    return re.sub(r'[^a-z0-9]+', ' ', str(name).strip().lower()).strip()
 
 
 class ScheduleConfigError(ValueError):
@@ -57,6 +68,7 @@ class ScheduleGenerator:
         - morning_periods / afternoon_periods: lists of period names
         - morning_priority_subjects / afternoon_priority_subjects: lists of subjects
         - ignored_periods: period names that are never scheduled into
+        - subject_aliases: dict of activity/break name -> subject it counts toward
         - random_seed: optional; varies tie-breaking to produce a different schedule
         """
         self.config = config or {}
@@ -68,6 +80,8 @@ class ScheduleGenerator:
         self.afternoon_periods = self.config.get('afternoon_periods') or []
         self.morning_priority_subjects = self.config.get('morning_priority_subjects') or []
         self.afternoon_priority_subjects = self.config.get('afternoon_priority_subjects') or []
+
+        self.subject_aliases = self.config.get('subject_aliases') or {}
 
         ignored = self.config.get('ignored_periods')
         if ignored is None:
@@ -173,6 +187,46 @@ class ScheduleGenerator:
         self.periods = normalised_periods
         self.subject_requirements = normalised_subjects
 
+        # --- aliases -------------------------------------------------------
+        # An alias says "time spent on this counts toward that subject", so the
+        # target has to be a real subject and each name may only point at one.
+        if not isinstance(self.subject_aliases, dict):
+            errors.append("subject_aliases must be a mapping of activity name to subject.")
+            self.subject_aliases = {}
+
+        alias_index = {}
+        for alias, subject in self.subject_aliases.items():
+            key = normalise_name(alias)
+            if not key:
+                errors.append("An alias was given with no activity name.")
+                continue
+            if subject not in self.subject_requirements:
+                errors.append(
+                    f"'{alias}' is set to count toward '{subject}', which is not one of the subjects."
+                )
+                continue
+            if key in alias_index and alias_index[key] != subject:
+                errors.append(
+                    f"'{alias}' is set to count toward both '{alias_index[key]}' and '{subject}'."
+                )
+                continue
+            alias_index[key] = subject
+
+        # A subject always counts toward itself, and an explicit alias must not
+        # quietly redirect it somewhere else.
+        for subject in self.subject_requirements:
+            key = normalise_name(subject)
+            if key in alias_index and alias_index[key] != subject:
+                errors.append(
+                    f"'{subject}' is a subject, so it cannot count toward '{alias_index[key]}'."
+                )
+            alias_index[key] = subject
+
+        self._alias_index = alias_index
+
+        if errors:
+            raise ScheduleConfigError(self._format_errors(errors))
+
         teaching = [p for p in self.periods if p not in self.ignored_periods]
         if not teaching:
             raise ScheduleConfigError(self._format_errors(
@@ -245,22 +299,18 @@ class ScheduleGenerator:
                 )
 
         # --- overall capacity ---------------------------------------------
-        # A pre-filled activity takes its whole period out of the pool. When the
-        # activity is named after a subject, initialize_schedule() credits those
-        # minutes to that subject, so they have to come off its demand as well -
+        # A pre-filled activity takes its whole period out of the pool. When it
+        # counts toward a subject, initialize_schedule() credits those minutes
+        # to that subject, so they have to come off its demand as well -
         # otherwise the block is charged twice and timetables that would in fact
-        # work get rejected.
+        # work get rejected. Breaks that count toward a subject are credited the
+        # same way; they were never in the pool to begin with.
         available = sum(self.periods[p][2] for p in teaching) * num_days
-        cycle_credit = {subject: 0 for subject in self.subject_requirements}
-        daily_credit = {day: {} for day in self.days}
-        for day, entries in self.pre_filled.items():
-            for period, activity in entries:
-                duration = self.periods[period][2]
-                available -= duration
-                if activity in self.subject_requirements:
-                    cycle_credit[activity] += duration
-                    day_credit = daily_credit[day]
-                    day_credit[activity] = day_credit.get(activity, 0) + duration
+        for entries in self.pre_filled.values():
+            for period, _activity in entries:
+                available -= self.periods[period][2]
+
+        cycle_credit, daily_credit = self._fixed_credit()
 
         demand = sum(
             max(
@@ -281,7 +331,7 @@ class ScheduleGenerator:
         # whatever that day's pre-filled activities already cover.
         day_capacity = sum(self.periods[p][2] for p in teaching)
         for day in self.days:
-            credited = daily_credit[day]
+            credited = daily_credit.get(day, {})
             capacity = day_capacity - sum(
                 self.periods[period][2] for period, _a in self.pre_filled.get(day, [])
             )
@@ -307,22 +357,61 @@ class ScheduleGenerator:
     # ------------------------------------------------------------------
     # Small helpers
     # ------------------------------------------------------------------
+    def credited_subject(self, activity):
+        """The subject an activity's minutes count toward, or None."""
+        return self._alias_index.get(normalise_name(activity))
+
+    def _fixed_credit(self):
+        """Minutes already covered before any scheduling happens.
+
+        Pre-filled activities and breaks can both be set to count toward a
+        subject - a Learning Commons block toward ELAL, recess toward PE. Those
+        minutes are spoken for, so they come off what still has to be found.
+        Returns (per-cycle totals, per-day totals).
+        """
+        cycle = {subject: 0 for subject in self.subject_requirements}
+        daily = {day: {subject: 0 for subject in self.subject_requirements} for day in self.days}
+
+        for day in self.days:
+            for period in self.ignored_periods:
+                if period not in self.periods:
+                    continue
+                subject = self.credited_subject(period)
+                if subject:
+                    minutes = self.periods[period][2]
+                    cycle[subject] += minutes
+                    daily[day][subject] += minutes
+
+            for period, activity in self.pre_filled.get(day, []):
+                subject = self.credited_subject(activity)
+                if subject:
+                    minutes = self.periods[period][2]
+                    cycle[subject] += minutes
+                    daily[day][subject] += minutes
+
+        return cycle, daily
+
     def initialize_schedule(self):
         """Initialize schedule with pre-filled and ignored periods."""
         for day in self.days:
-            # Ignored periods are breaks and always win their slot.
+            # Ignored periods are breaks and always win their slot. A break can
+            # still count toward a subject - recess toward PE, say - without
+            # ever becoming schedulable time.
             for period in self.ignored_periods:
                 if period in self.periods:
                     self.schedule[day][period] = [SubjectBlock(BREAK, self.periods[period][2])]
 
             # Pre-filled activities occupy their whole period. When the activity
-            # name matches a subject, it counts toward that subject's totals.
+            # is a subject, or counts toward one, those minutes are credited.
             for period, activity in self.pre_filled.get(day, []):
-                duration = self.periods[period][2]
-                self.schedule[day][period] = [SubjectBlock(activity, duration)]
-                if activity in self.subject_requirements:
-                    self.subject_totals[activity] += duration
-                    self.daily_subject_totals[day][activity] += duration
+                self.schedule[day][period] = [SubjectBlock(activity, self.periods[period][2])]
+
+        cycle_credit, daily_credit = self._fixed_credit()
+        for subject, minutes in cycle_credit.items():
+            self.subject_totals[subject] += minutes
+        for day, totals in daily_credit.items():
+            for subject, minutes in totals.items():
+                self.daily_subject_totals[day][subject] += minutes
 
     def get_period_remaining_time(self, day: str, period: str) -> int:
         """Get how many minutes are left in a period."""

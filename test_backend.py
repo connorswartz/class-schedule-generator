@@ -121,13 +121,29 @@ def assert_invariants(generator, label=""):
 
     check(not summary["over_cap"], f"{prefix}per-day cap exceeded: {summary['over_cap']}")
 
-    # Totals must agree with what is actually on the board.
+    # Totals must agree with what is on the board, plus whatever is credited
+    # without being scheduled - a break or an activity that counts toward a
+    # subject keeps its own label in the grid.
     counted = {subject: 0 for subject in generator.subject_requirements}
     for day in generator.days:
         for blocks in generator.schedule[day].values():
             for block in blocks:
                 if block.subject in counted:
                     counted[block.subject] += block.minutes
+
+    credit = generator._fixed_credit()[0]
+    for subject, minutes in credit.items():
+        # A block already labelled with the subject was counted above.
+        if generator.credited_subject(subject) == subject:
+            already = sum(
+                generator.periods[period][2]
+                for day in generator.days
+                for period, activity in generator.pre_filled.get(day, [])
+                if activity == subject
+            )
+            minutes -= already
+        counted[subject] += minutes
+
     check(
         counted == generator.subject_totals,
         f"{prefix}subject totals disagree with the schedule: "
@@ -222,6 +238,140 @@ def test_prefilled_covers_daily_minimum():
     check(not summary["unmet_daily"], f"daily minimums unmet: {summary['unmet_daily']}")
     got = summary["daily_totals"]["Day 1"]["Math"]
     check(got >= 45, f"Day 1 Math got {got} min, needs 45")
+
+
+@test("a pre-filled activity can count toward a subject through an alias")
+def test_alias_credits_prefilled():
+    # Learning Commons sits in Day 6 period_7 (50 min) and counts toward ELAL,
+    # so the engine only has to find the other 526 min of it.
+    config = build(subject_aliases={"Learning Commons": "ELAL"})
+    generator = run(config)
+    summary = generator.get_summary()
+
+    assert_invariants(generator, "alias-prefilled")
+    check(not summary["unmet_cycle"], f"cycle minimums unmet: {summary['unmet_cycle']}")
+    check(
+        summary["daily_totals"]["Day 6"]["ELAL"] >= 50,
+        f"Day 6 ELAL should include the 50 min Learning Commons block, "
+        f"got {summary['daily_totals']['Day 6']['ELAL']}",
+    )
+
+    scheduled = sum(
+        block.minutes
+        for day in generator.days
+        for blocks in generator.schedule[day].values()
+        for block in blocks
+        if block.subject == "ELAL"
+    )
+    check(
+        scheduled == summary["subject_totals"]["ELAL"] - 50,
+        f"the credited 50 min must not also be scheduled: {scheduled} scheduled "
+        f"vs {summary['subject_totals']['ELAL']} counted",
+    )
+    print(f"    ELAL: {scheduled} min scheduled + 50 min credited = {summary['subject_totals']['ELAL']}")
+
+
+@test("a break can count toward a subject on every day of the cycle")
+def test_alias_credits_break():
+    # Recess is 20 min a day and never becomes teaching time, but it counts
+    # toward PE/Health: 120 min over the 6-day cycle.
+    config = build(
+        subject_aliases={"recess": "PE/Health", "DPA": "PE/Health", "PE": "PE/Health"},
+        subject_requirements={
+            **DEFAULT_CONFIG["subject_requirements"],
+            "PE/Health": {"min_per_block": 10, "min_per_day": 0, "min_per_cycle": 220},
+        },
+    )
+    generator = run(config)
+    summary = generator.get_summary()
+
+    assert_invariants(generator, "alias-break")
+    check(not summary["unmet_cycle"], f"cycle minimums unmet: {summary['unmet_cycle']}")
+
+    # 6 x 20 min recess + 49 min PE (Day 1) + 49 min DPA (Day 5) = 218 credited.
+    scheduled = sum(
+        block.minutes
+        for day in generator.days
+        for blocks in generator.schedule[day].values()
+        for block in blocks
+        if block.subject == "PE/Health"
+    )
+    check(
+        summary["subject_totals"]["PE/Health"] - scheduled == 218,
+        f"expected 218 min credited from recess/PE/DPA, got "
+        f"{summary['subject_totals']['PE/Health'] - scheduled}",
+    )
+    check(
+        all(
+            generator.schedule[day]["recess"][0].subject == "Break"
+            for day in generator.days
+        ),
+        "recess must stay a break even while counting toward PE/Health",
+    )
+    print(f"    PE/Health: 218 min credited from breaks and activities, {scheduled} min scheduled")
+
+
+@test("alias matching ignores case and underscores")
+def test_alias_matching_is_forgiving():
+    from schedule_backend import normalise_name
+
+    for written, typed in [
+        ("Learning Commons", "learning_commons"),
+        ("learning commons", "LEARNING COMMONS"),
+        ("PE/Health", "pe health"),
+    ]:
+        check(
+            normalise_name(written) == normalise_name(typed),
+            f"{written!r} and {typed!r} should match",
+        )
+
+    generator = run(build(subject_aliases={"LEARNING_COMMONS": "ELAL"}))
+    check(
+        generator.credited_subject("Learning Commons") == "ELAL",
+        "an alias written one way should match the activity written another",
+    )
+
+
+@test("bad aliases are rejected")
+def test_alias_validation():
+    cases = [
+        ("unknown subject", build(subject_aliases={"Choir": "Music Theory"}), "not one of the subjects"),
+        ("subject redirected", build(subject_aliases={"Math": "ELAL"}), "cannot count toward"),
+        ("empty name", build(subject_aliases={"  ": "ELAL"}), "no activity name"),
+        ("not a mapping", build(subject_aliases=["ELAL"]), "mapping"),
+    ]
+    for label, config, expected in cases:
+        try:
+            ScheduleGenerator(config)
+        except ScheduleConfigError as error:
+            check(expected in str(error), f"{label}: expected {expected!r}, got {error}")
+            continue
+        raise AssertionError(f"{label}: expected ScheduleConfigError, none raised")
+    print(f"    {len(cases)} bad alias configurations rejected")
+
+
+@test("credited minutes count against capacity, not on top of it")
+def test_alias_credit_frees_capacity():
+    # 1,730 min of minimums against 1,673 min of teaching time. Learning Commons
+    # and recess cover 170 of it, so it fits - but only because the credit comes
+    # off the demand.
+    config = build(
+        max_per_day=0,
+        subject_aliases={"Learning Commons": "ELAL", "recess": "ELAL"},
+        subject_requirements={
+            "ELAL": {"min_per_block": 10, "min_per_day": 20, "min_per_cycle": 700},
+            "Math": {"min_per_block": 10, "min_per_day": 20, "min_per_cycle": 500},
+            "Science": {"min_per_block": 10, "min_per_day": 10, "min_per_cycle": 280},
+            "Social": {"min_per_block": 10, "min_per_day": 10, "min_per_cycle": 250},
+        },
+        morning_priority_subjects=["ELAL", "Math"],
+    )
+    generator = run(config)
+    summary = generator.get_summary()
+
+    assert_invariants(generator, "alias-capacity")
+    check(not summary["unmet_cycle"], f"cycle minimums unmet: {summary['unmet_cycle']}")
+    print(f"    1730 min of minimums fitted into {summary['total_available']} min available")
 
 
 @test("daily minimums are honoured even above the cycle minimum (bug 2)")
