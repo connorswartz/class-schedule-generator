@@ -43,46 +43,49 @@ def substitute(pattern, replacement, text, label, flags=re.DOTALL):
 EXTRA_CSS = """
         /* ---- static build additions ---- */
         .nav-button {
-            background: none;
-            border: none;
             font: inherit;
             cursor: pointer;
+            background: none;
+            border: 1px solid transparent;
         }
 
-        .browser-note {
-            background: #10243d;
-            border: 1px solid #24487a;
-            color: #b9d4f5;
-            padding: 12px 16px;
-            border-radius: 10px;
+        .browser-note,
+        .engine-status {
+            padding: 13px 17px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--line);
+            border-left: 3px solid var(--primary);
+            background: var(--primary-soft);
+            color: var(--primary-soft-text);
+            font-size: 0.87rem;
+            line-height: 1.5;
             margin-bottom: 18px;
-            font-size: 0.88rem;
-            line-height: 1.45;
+        }
+
+        .browser-note strong {
+            font-weight: 650;
         }
 
         .engine-status {
             display: none;
-            background: #10243d;
-            border: 1px solid #24487a;
-            color: #b9d4f5;
-            padding: 12px 16px;
-            border-radius: 10px;
-            margin-bottom: 18px;
-            font-size: 0.9rem;
         }
 
         .saved-panel {
             display: none;
-            background: linear-gradient(165deg, #0d1628 0%, #101a30 100%);
-            border: 1px solid #273656;
-            border-radius: 14px;
-            padding: 20px;
-            margin-bottom: 22px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius-lg);
+            padding: 22px 24px;
+            margin-bottom: 18px;
+            box-shadow: var(--shadow-1);
         }
 
         .saved-panel h2 {
-            margin: 0 0 6px;
-            font-size: 1.15rem;
+            font-family: var(--font-display);
+            font-size: 1.16rem;
+            font-weight: 650;
+            letter-spacing: -0.015em;
+            margin-bottom: 4px;
         }
 
         .saved-row {
@@ -90,8 +93,8 @@ EXTRA_CSS = """
             align-items: center;
             gap: 10px;
             flex-wrap: wrap;
-            padding: 11px 0;
-            border-top: 1px solid #273656;
+            padding: 13px 0;
+            border-top: 1px solid var(--line);
         }
 
         .saved-row .saved-name {
@@ -101,12 +104,14 @@ EXTRA_CSS = """
 
         .saved-row .saved-date {
             color: var(--muted);
-            font-size: 0.82rem;
+            font-size: 0.8rem;
+            font-variant-numeric: tabular-nums;
         }
 
         .saved-empty {
             color: var(--muted);
-            padding-top: 12px;
+            padding-top: 14px;
+            font-size: 0.89rem;
         }
 """
 

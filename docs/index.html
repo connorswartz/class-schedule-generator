@@ -4,32 +4,144 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Class Schedule Generator</title>
+    <meta name="color-scheme" content="light dark">
+    <script>
+        // Runs before the stylesheet paints, so the saved theme is already on
+        // the document and the page never flashes the wrong one.
+        (function () {
+            try {
+                var saved = localStorage.getItem('class-schedule-generator/theme');
+                var dark = saved
+                    ? saved === 'dark'
+                    : window.matchMedia('(prefers-color-scheme: dark)').matches;
+                document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+            } catch (_error) {
+                document.documentElement.dataset.theme = 'light';
+            }
+        })();
+    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;450;500;600;700&display=swap');
 
+        /* ============================================================
+           Design tokens. Light is the default; the dark set is applied
+           by [data-theme="dark"], which the head script sets from the
+           saved preference or the system setting before first paint.
+           ============================================================ */
         :root {
-            --bg-0: #070b14;
-            --bg-1: #0d1422;
-            --panel: #101a2d;
-            --panel-soft: #141f36;
-            --panel-hover: #17253f;
-            --line: #283654;
-            --line-soft: #1e2a42;
-            --text: #edf2ff;
-            --muted: #98a9cc;
-            --accent: #ff4b6e;
-            --accent-2: #4d7cff;
-            --good: #25d08c;
-            --warn: #f59e0b;
-            --danger: #ef4444;
-            --radius-lg: 18px;
-            --radius-md: 12px;
+            color-scheme: light;
+
+            --bg: #f4f6fb;
+            --bg-glow-a: rgba(99, 102, 241, 0.18);
+            --bg-glow-b: rgba(236, 72, 153, 0.13);
+            --bg-glow-c: rgba(14, 165, 233, 0.12);
+
+            --surface: #ffffff;
+            --surface-2: #f8f9fd;
+            --surface-3: #f0f2f8;
+            --surface-raised: #ffffff;
+
+            --text: #101528;
+            --text-2: #3f475f;
+            --muted: #626a80;
+            --faint: #727a91;
+
+            --line: #e6e9f2;
+            --line-strong: #d5dae8;
+
+            --primary: #5b53e0;
+            --primary-hover: #4a42d1;
+            --primary-text: #ffffff;
+            --primary-soft: #eeecff;
+            --primary-soft-text: #4038c4;
+            --ring: rgba(91, 83, 224, 0.30);
+
+            --good: #0e9d6e;
+            --good-soft: #e4f7ef;
+            --good-line: #a9e5cd;
+
+            --warn: #a96500;
+            --warn-soft: #fdf2e0;
+            --warn-line: #f0d19a;
+
+            --danger: #d62f45;
+            --danger-soft: #fdebee;
+            --danger-line: #f5bcc4;
+
+            --radius-xs: 8px;
+            --radius-sm: 11px;
+            --radius: 15px;
+            --radius-lg: 20px;
+            --radius-xl: 28px;
+
+            --shadow-1: 0 1px 2px rgba(16, 21, 40, 0.05), 0 1px 3px rgba(16, 21, 40, 0.04);
+            --shadow-2: 0 2px 6px rgba(16, 21, 40, 0.05), 0 10px 24px rgba(16, 21, 40, 0.07);
+            --shadow-3: 0 18px 50px rgba(16, 21, 40, 0.13);
+            --shadow-primary: 0 8px 22px rgba(91, 83, 224, 0.30);
+
+            --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+            --dur: 170ms;
+
+            --font-ui: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            --font-display: 'Space Grotesk', 'Inter', sans-serif;
         }
 
-        * {
+        [data-theme="dark"] {
+            color-scheme: dark;
+
+            --bg: #0c1020;
+            --bg-glow-a: rgba(99, 102, 241, 0.26);
+            --bg-glow-b: rgba(236, 72, 153, 0.16);
+            --bg-glow-c: rgba(14, 165, 233, 0.16);
+
+            --surface: #151b2e;
+            --surface-2: #1a2136;
+            --surface-3: #212a42;
+            --surface-raised: #1b2338;
+
+            --text: #eef1fa;
+            --text-2: #bcc4dc;
+            --muted: #8d97b4;
+            --faint: #6b7495;
+
+            --line: #2a3350;
+            --line-strong: #384463;
+
+            --primary: #7c76ff;
+            --primary-hover: #8f8aff;
+            --primary-text: #0b0f1e;
+            --primary-soft: #232a4d;
+            --primary-soft-text: #b7b2ff;
+            --ring: rgba(124, 118, 255, 0.38);
+
+            --good: #34d399;
+            --good-soft: #10291f;
+            --good-line: #1d5a44;
+
+            --warn: #fbbf24;
+            --warn-soft: #2a2110;
+            --warn-line: #5f4a15;
+
+            --danger: #fb7185;
+            --danger-soft: #2d1220;
+            --danger-line: #6b2338;
+
+            --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.35);
+            --shadow-2: 0 2px 6px rgba(0, 0, 0, 0.3), 0 12px 28px rgba(0, 0, 0, 0.35);
+            --shadow-3: 0 20px 55px rgba(0, 0, 0, 0.5);
+            --shadow-primary: 0 8px 24px rgba(124, 118, 255, 0.32);
+        }
+
+        *,
+        *::before,
+        *::after {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+        }
+
+        html {
+            -webkit-text-size-adjust: 100%;
         }
 
         html,
@@ -38,626 +150,679 @@
         }
 
         body {
-            font-family: 'Manrope', 'Avenir Next', 'Helvetica Neue', sans-serif;
+            font-family: var(--font-ui);
+            font-size: 15px;
+            line-height: 1.55;
             color: var(--text);
-            background:
-                radial-gradient(1200px 500px at -10% -10%, #1e3a8a55 0%, transparent 70%),
-                radial-gradient(900px 500px at 110% 0%, #be123c55 0%, transparent 68%),
-                linear-gradient(160deg, var(--bg-0) 0%, var(--bg-1) 55%, #121a2f 100%);
-            padding: 24px;
+            background-color: var(--bg);
+            background-image:
+                radial-gradient(58rem 34rem at 8% -8%, var(--bg-glow-a) 0%, transparent 62%),
+                radial-gradient(46rem 30rem at 104% 2%, var(--bg-glow-b) 0%, transparent 60%),
+                radial-gradient(50rem 34rem at 50% 108%, var(--bg-glow-c) 0%, transparent 62%);
+            background-attachment: fixed;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
         }
 
+        ::selection {
+            background: var(--primary);
+            color: var(--primary-text);
+        }
+
+        /* ---------- shell ---------- */
         .container {
-            max-width: 1300px;
+            max-width: 1180px;
             margin: 0 auto;
-            background: linear-gradient(150deg, #0d1628ee 0%, #101a2dee 100%);
-            border: 1px solid #ffffff1f;
-            border-radius: 28px;
-            box-shadow: 0 26px 80px rgba(0, 0, 0, 0.45);
-            backdrop-filter: blur(14px);
-            padding: 36px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .container::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, var(--accent), var(--accent-2), #06b6d4);
-        }
-
-        h1 {
-            font-family: 'Space Grotesk', 'Avenir Next', sans-serif;
-            letter-spacing: 0.02em;
-            color: #f9fbff;
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: clamp(2rem, 3.6vw, 2.8rem);
-            text-shadow: 0 10px 34px rgba(77, 124, 255, 0.3);
-        }
-
-        .subtitle {
-            text-align: center;
-            color: var(--muted);
-            margin-bottom: 30px;
-            font-size: 1rem;
+            padding: 0 24px 72px;
         }
 
         .app-nav {
+            position: sticky;
+            top: 0;
+            z-index: 50;
             display: flex;
-            justify-content: flex-end;
             align-items: center;
             gap: 10px;
-            margin-bottom: 14px;
-            flex-wrap: wrap;
+            padding: 14px 0;
+            margin-bottom: 8px;
+            background: color-mix(in srgb, var(--bg) 82%, transparent);
+            backdrop-filter: saturate(150%) blur(14px);
+            -webkit-backdrop-filter: saturate(150%) blur(14px);
+            border-bottom: 1px solid transparent;
+            transition: border-color var(--dur) var(--ease);
+        }
+
+        .app-nav.is-stuck {
+            border-bottom-color: var(--line);
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--font-display);
+            font-weight: 700;
+            font-size: 0.98rem;
+            letter-spacing: -0.01em;
+            color: var(--text);
+            margin-right: auto;
+        }
+
+        .brand-mark {
+            display: grid;
+            place-items: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 9px;
+            background: linear-gradient(140deg, var(--primary) 0%, #a855f7 100%);
+            color: #fff;
+            box-shadow: var(--shadow-primary);
+            flex: 0 0 auto;
+        }
+
+        .brand-mark svg {
+            width: 17px;
+            height: 17px;
         }
 
         .account-chip {
-            padding: 7px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 7px 13px;
             border-radius: 999px;
-            border: 1px solid #33496f;
-            background: #0c162b;
-            color: #cddbfd;
-            font-size: 0.82rem;
-            font-weight: 700;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            color: var(--text-2);
+            font-size: 0.84rem;
+            font-weight: 550;
+            box-shadow: var(--shadow-1);
         }
 
         .nav-link {
             display: inline-flex;
             align-items: center;
+            padding: 8px 14px;
+            border-radius: 999px;
+            border: 1px solid transparent;
+            color: var(--text-2);
             text-decoration: none;
-            padding: 8px 12px;
-            border-radius: 10px;
-            border: 1px solid #33496f;
-            background: #0c162b;
-            color: #dbe7ff;
-            font-size: 0.84rem;
-            font-weight: 700;
+            font-size: 0.86rem;
+            font-weight: 550;
+            transition: background var(--dur) var(--ease), color var(--dur) var(--ease),
+                        border-color var(--dur) var(--ease);
         }
 
         .nav-link:hover {
-            background: #12203a;
-            border-color: #45619a;
+            background: var(--surface);
+            border-color: var(--line);
+            color: var(--text);
+        }
+
+        .theme-toggle {
+            display: grid;
+            place-items: center;
+            width: 36px;
+            height: 36px;
+            padding: 0;
+            margin: 0;
+            flex: 0 0 auto;
+            border-radius: 999px;
+            border: 1px solid var(--line);
+            background: var(--surface);
+            color: var(--text-2);
+            box-shadow: var(--shadow-1);
+            cursor: pointer;
+            transition: color var(--dur) var(--ease), border-color var(--dur) var(--ease),
+                        transform var(--dur) var(--ease);
+        }
+
+        .theme-toggle:hover {
+            color: var(--primary);
+            border-color: var(--primary);
+            transform: none;
+            box-shadow: var(--shadow-1);
+        }
+
+        .theme-toggle svg {
+            width: 17px;
+            height: 17px;
+        }
+
+        .theme-toggle .icon-sun { display: none; }
+        [data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+        [data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+
+        /* ---------- hero ---------- */
+        .hero {
+            padding: 30px 0 26px;
+        }
+
+        .sample-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            width: auto;
+            height: 40px;
+            margin-top: 18px;
+            padding: 0 17px;
+            border-radius: 999px;
+            border: 1px solid var(--line-strong);
+            background: var(--surface);
+            color: var(--text-2);
+            font-size: 0.87rem;
+            font-weight: 600;
+            box-shadow: var(--shadow-1);
+        }
+
+        .sample-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary-soft-text);
+            background: var(--primary-soft);
+            transform: translateY(-1px);
+        }
+
+        .sample-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        h1 {
+            font-family: var(--font-display);
+            font-size: clamp(2rem, 4.4vw, 2.9rem);
+            font-weight: 700;
+            line-height: 1.08;
+            letter-spacing: -0.028em;
+            color: var(--text);
+        }
+
+        .subtitle {
+            margin-top: 10px;
+            font-size: 1.02rem;
+            color: var(--muted);
+            max-width: 64ch;
+        }
+
+        /* ---------- section cards ---------- */
+        form {
+            counter-reset: step;
         }
 
         .section {
-            margin-bottom: 22px;
-            padding: 22px;
-            background: linear-gradient(165deg, #131f35d8 0%, #101a2ed8 100%);
-            border: 1px solid var(--line-soft);
+            position: relative;
+            background: var(--surface);
+            border: 1px solid var(--line);
             border-radius: var(--radius-lg);
-            box-shadow: inset 0 1px 0 #ffffff14;
-            transition: transform 220ms ease, border-color 220ms ease, background 220ms ease;
-            animation: slideIn 450ms ease both;
+            padding: 26px 28px;
+            margin-bottom: 18px;
+            box-shadow: var(--shadow-1);
+            transition: box-shadow var(--dur) var(--ease), border-color var(--dur) var(--ease);
         }
 
-        .section:nth-of-type(2) { animation-delay: 45ms; }
-        .section:nth-of-type(3) { animation-delay: 90ms; }
-        .section:nth-of-type(4) { animation-delay: 135ms; }
-        .section:nth-of-type(5) { animation-delay: 180ms; }
-
         .section:hover {
-            transform: translateY(-2px);
-            background: linear-gradient(165deg, #16243ed8 0%, #13203ad8 100%);
-            border-color: #3a4d78;
+            box-shadow: var(--shadow-2);
         }
 
         .section-title {
-            font-family: 'Space Grotesk', 'Avenir Next', sans-serif;
-            font-size: clamp(1.1rem, 2vw, 1.35rem);
-            color: #f3f6ff;
-            margin-bottom: 16px;
-            font-weight: 700;
-            letter-spacing: 0.01em;
+            font-family: var(--font-display);
+            font-size: 1.16rem;
+            font-weight: 650;
+            letter-spacing: -0.015em;
+            color: var(--text);
+            margin-bottom: 4px;
         }
 
+        form .section {
+            counter-increment: step;
+            padding-left: 28px;
+        }
+
+        form .section > .section-title {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+        }
+
+        form .section > .section-title::before {
+            content: counter(step);
+            display: grid;
+            place-items: center;
+            width: 26px;
+            height: 26px;
+            flex: 0 0 auto;
+            border-radius: 9px;
+            background: var(--primary-soft);
+            color: var(--primary-soft-text);
+            font-family: var(--font-ui);
+            font-size: 0.82rem;
+            font-weight: 700;
+        }
+
+        .optional-tag {
+            margin-left: auto;
+            padding: 4px 11px;
+            border-radius: 999px;
+            background: var(--surface-3);
+            border: 1px solid var(--line);
+            color: var(--muted);
+            font-family: var(--font-ui);
+            font-size: 0.68rem;
+            font-weight: 650;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .section-title + .help-text {
+            margin-top: 2px;
+            font-size: 0.92rem;
+            max-width: 78ch;
+        }
+
+        .help-text {
+            color: var(--muted);
+            font-size: 0.86rem;
+            line-height: 1.5;
+        }
+
+        /* ---------- forms ---------- */
         .form-group {
-            margin-bottom: 16px;
+            margin-bottom: 20px;
         }
 
         label {
             display: block;
-            margin-bottom: 8px;
-            color: #d3def6;
-            font-size: 0.92rem;
+            margin-bottom: 7px;
+            font-size: 0.85rem;
             font-weight: 600;
-            letter-spacing: 0.015em;
+            color: var(--text-2);
+            letter-spacing: 0.005em;
         }
 
         input[type="text"],
         input[type="number"],
+        input[type="time"],
+        input[type="password"],
+        input[type="email"],
         select,
         textarea {
             width: 100%;
-            padding: 12px 14px;
-            border: 1px solid #314162;
-            border-radius: var(--radius-md);
-            background: #0d1627;
-            color: var(--text);
+            height: 42px;
+            padding: 0 13px;
             font-family: inherit;
-            font-size: 0.95rem;
-            transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+            font-size: 0.92rem;
+            font-weight: 500;
+            color: var(--text);
+            background: var(--surface-2);
+            border: 1px solid var(--line-strong);
+            border-radius: var(--radius-sm);
+            outline: none;
+            transition: border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
+                        background var(--dur) var(--ease);
+        }
+
+        textarea {
+            height: auto;
+            padding: 11px 13px;
+            resize: vertical;
+        }
+
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            padding-right: 34px;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236a7288' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 11px center;
+            background-size: 15px;
+            cursor: pointer;
+        }
+
+        [data-theme="dark"] select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238d97b4' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
         }
 
         input::placeholder,
         textarea::placeholder {
-            color: #7f92b9;
+            color: var(--faint);
+            font-weight: 450;
+        }
+
+        input:hover,
+        select:hover,
+        textarea:hover {
+            border-color: var(--muted);
         }
 
         input:focus,
         select:focus,
         textarea:focus {
-            outline: none;
-            border-color: #6a8bff;
-            box-shadow: 0 0 0 3px #4d7cff33;
+            background: var(--surface);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3.5px var(--ring);
+        }
+
+        input[type="time"]::-webkit-calendar-picker-indicator {
+            opacity: 0.5;
+            cursor: pointer;
+            transition: opacity var(--dur) var(--ease);
+        }
+
+        input[type="time"]:hover::-webkit-calendar-picker-indicator {
+            opacity: 0.9;
+        }
+
+        [data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
         }
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
             gap: 14px;
         }
 
-        .checkbox-group {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-        }
-
-        .checkbox-item {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 12px;
-            border-radius: 999px;
-            background: #0b1424;
-            border: 1px solid #273552;
-            transition: border-color 180ms ease, background 180ms ease;
-        }
-
-        .checkbox-item:hover {
-            border-color: #3f5682;
-            background: #111d33;
-        }
-
-        .checkbox-item input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
-            cursor: pointer;
-            accent-color: #6d8cff;
-        }
-
-        .checkbox-item label {
-            margin: 0;
-            color: #cfdaf2;
-            font-weight: 500;
-            font-size: 0.86rem;
-        }
-
-        button {
-            background: linear-gradient(120deg, #ff4b6e 0%, #ff7b5e 55%, #ff9f40 100%);
-            color: #fff;
-            padding: 13px 28px;
-            border: none;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-            cursor: pointer;
-            transition: transform 180ms ease, box-shadow 180ms ease, filter 180ms ease;
-            width: 100%;
-            margin-top: 20px;
-            box-shadow: 0 12px 24px #ff5f5f3d;
-        }
-
-        button:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 16px 30px #ff5f5f55;
-            filter: saturate(1.1);
-        }
-
-        button:active {
-            transform: translateY(0);
-        }
-
-        .add-btn, .remove-btn {
-            width: auto;
-            margin-top: 10px;
-            padding: 9px 14px;
-            font-size: 0.84rem;
-            border-radius: 10px;
-            box-shadow: none;
-        }
-
-        .add-btn {
-            background: linear-gradient(120deg, #3b82f6 0%, #6366f1 100%);
-        }
-
-        .remove-btn {
-            background: linear-gradient(120deg, #ef4444 0%, #fb7185 100%);
-        }
-
-        #results {
-            margin-top: 26px;
-            display: none;
-        }
-
-        .results-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            gap: 14px;
-            margin-bottom: 18px;
-        }
-
-        .download-btn {
-            background: linear-gradient(120deg, #1d4ed8 0%, #3b82f6 100%);
-            margin-top: 0;
-            width: auto;
-            box-shadow: 0 12px 24px #3b82f640;
-        }
-
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 14px;
-            margin-bottom: 24px;
-        }
-
-        .summary-card {
-            background: linear-gradient(160deg, #0f192d 0%, #12203a 100%);
-            border: 1px solid #273656;
-            border-radius: 14px;
-            padding: 16px;
-            box-shadow: inset 0 1px 0 #ffffff12;
-        }
-
-        .summary-card h3 {
-            color: #dbe6ff;
-            margin-bottom: 8px;
-            font-size: 0.95rem;
-            font-weight: 700;
-        }
-
-        .summary-card .value {
-            font-size: 1.8rem;
-            font-weight: 800;
-            color: #f5f8ff;
-            line-height: 1.1;
-        }
-
-        .summary-card .label {
-            color: var(--muted);
-            font-size: 0.84rem;
-            margin-top: 4px;
-        }
-
-        .save-schedule-panel {
-            margin-bottom: 16px;
-            border: 1px solid #2a3a5f;
-            border-radius: 12px;
-            padding: 14px;
-            background: linear-gradient(160deg, #0d1729 0%, #111d34 100%);
-        }
-
-        .save-schedule-grid {
-            display: grid;
-            grid-template-columns: minmax(230px, 1fr) auto;
-            gap: 10px;
-            align-items: end;
-        }
-
-        .save-btn {
-            width: auto;
-            margin-top: 0;
-            height: 44px;
-            padding: 10px 16px;
-            box-shadow: none;
-            background: linear-gradient(120deg, #1d4ed8 0%, #3b82f6 100%);
-        }
-
-        .save-status {
-            margin-top: 8px;
-            min-height: 18px;
-            font-size: 0.84rem;
-            color: var(--muted);
-        }
-
-        .save-status.success {
-            color: #9df7d0;
-        }
-
-        .save-status.error {
-            color: #ffb9c6;
-        }
-
-        .summary-card.requirement-card {
-            transition: border-color 180ms ease, box-shadow 180ms ease;
-        }
-
-        .summary-card.requirement-card.met {
-            border-color: #1f6f55;
-            box-shadow:
-                0 0 0 1px #25d08c33 inset,
-                0 0 18px #25d08c26;
-        }
-
-        .summary-card.requirement-card.unmet {
-            border-color: #8b1f36;
-            box-shadow:
-                0 0 0 1px #ef444433 inset,
-                0 0 18px #ef444422;
-        }
-
-        .schedule-table {
-            width: 100%;
-            overflow-x: auto;
-            border: 1px solid #2a3a5f;
-            border-radius: 14px;
-            background: #0b1324;
-            box-shadow: inset 0 1px 0 #ffffff10;
-        }
-
-        table {
-            width: 100%;
-            min-width: 980px;
-            border-collapse: separate;
-            border-spacing: 0;
-            table-layout: fixed;
-            background: transparent;
-        }
-
-        th, td {
-            padding: 14px 12px;
-            text-align: left;
-            border-bottom: 1px solid #22304d;
-            vertical-align: top;
-            white-space: normal;
-            word-break: break-word;
-            line-height: 1.35;
-        }
-
-        th {
-            background: linear-gradient(120deg, #1f2f52 0%, #172746 100%);
-            color: #f0f4ff;
-            font-family: 'Space Grotesk', 'Avenir Next', sans-serif;
-            font-weight: 700;
-            position: sticky;
-            top: 0;
-            z-index: 2;
-        }
-
-        tbody tr:nth-child(even) td {
-            background: #0f1a30;
-        }
-
-        tbody tr:nth-child(odd) td {
-            background: #0c1629;
-        }
-
-        tbody tr:hover td {
-            background: #14213a;
-        }
-
-        th:first-child,
-        td.period-col {
-            width: 220px;
-            min-width: 220px;
-            position: sticky;
-            left: 0;
-            z-index: 1;
-            box-shadow: 1px 0 0 #22304d;
-        }
-
-        td.period-col {
-            background: #0c162b;
-        }
-
-        .period-name {
-            font-family: 'Space Grotesk', 'Avenir Next', sans-serif;
-            font-size: 1.01rem;
-            font-weight: 700;
-            color: #eef3ff;
-            margin-bottom: 3px;
-        }
-
-        .period-time {
-            font-size: 0.9rem;
-            color: #90a3c8;
-            font-weight: 600;
-        }
-
-        .schedule-block {
-            display: flex;
-            width: fit-content;
-            max-width: 100%;
-            padding: 4px 10px;
-            margin-bottom: 6px;
-            border-radius: 999px;
-            border: 1px solid var(--chip-border, #3a4d75);
-            background: var(--chip-bg, #1a2741);
-            box-shadow:
-                inset 0 1px 0 #ffffff22,
-                0 0 12px var(--chip-glow, #00000000);
-            color: var(--chip-text, #e8efff);
-            font-size: 0.84rem;
-            font-weight: 700;
-            line-height: 1.25;
-        }
-
-        .schedule-block:last-child {
-            margin-bottom: 0;
-        }
-
-        .break-cell {
-            color: #8ea3ca;
-            text-align: left;
-        }
-
-        .break-text {
-            color: #8ea3ca;
-            font-style: italic;
-            font-weight: 600;
-            letter-spacing: 0.01em;
-        }
-
-        .free-cell {
-            color: #9ab2db;
-        }
-
-        .error-cell {
-            color: #ff7a7a;
-            font-weight: 700;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 34px;
-            display: none;
-            color: var(--muted);
-        }
-
-        .spinner {
-            border: 4px solid #ffffff18;
-            border-top: 4px solid #5f86ff;
-            border-radius: 50%;
-            width: 42px;
-            height: 42px;
-            animation: spin 0.9s linear infinite;
-            margin: 0 auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @keyframes slideIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-
-        .error {
-            background: #44131f;
-            color: #ffb9c6;
-            border: 1px solid #7f1d32;
-            padding: 14px;
-            border-radius: 10px;
-            margin-top: 16px;
-            display: none;
-            /* Validation errors arrive as a multi-line bulleted list. */
-            white-space: pre-wrap;
-            line-height: 1.5;
-        }
-
-        .field-invalid {
-            border-color: #ef4444 !important;
-            box-shadow: 0 0 0 3px #ef444433 !important;
+        .field-invalid,
+        input.field-invalid:focus {
+            border-color: var(--danger);
+            box-shadow: 0 0 0 3.5px rgba(214, 47, 69, 0.18);
         }
 
         .field-error {
             display: none;
             margin-top: 6px;
-            color: #ff9fb1;
+            color: var(--danger);
             font-size: 0.8rem;
-            line-height: 1.25;
+            font-weight: 550;
         }
 
-        .success {
-            background: #11342a;
-            color: #9df7d0;
-            border: 1px solid #1f6f55;
-            padding: 14px;
-            border-radius: 10px;
-            margin-top: 16px;
+        /* ---------- buttons ---------- */
+        button {
+            font-family: inherit;
+            cursor: pointer;
+            border: none;
+            transition: background var(--dur) var(--ease), color var(--dur) var(--ease),
+                        border-color var(--dur) var(--ease), box-shadow var(--dur) var(--ease),
+                        transform var(--dur) var(--ease);
         }
 
-        .help-text {
-            font-size: 0.84rem;
+        button:focus-visible,
+        a:focus-visible,
+        input:focus-visible,
+        select:focus-visible {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        form > button[type="submit"] {
+            display: block;
+            width: 100%;
+            height: 54px;
+            margin-top: 26px;
+            border-radius: var(--radius);
+            background: linear-gradient(135deg, var(--primary) 0%, #8b5cf6 100%);
+            color: #fff;
+            font-family: var(--font-display);
+            font-size: 1.02rem;
+            font-weight: 650;
+            letter-spacing: 0.005em;
+            box-shadow: var(--shadow-primary);
+        }
+
+        form > button[type="submit"]:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 34px rgba(91, 83, 224, 0.38);
+        }
+
+        form > button[type="submit"]:active {
+            transform: translateY(0);
+        }
+
+        .add-btn,
+        .remove-btn,
+        .tool-btn,
+        .seed-btn {
+            width: auto;
+            height: 38px;
+            padding: 0 15px;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            background: var(--surface-2);
+            border: 1px solid var(--line-strong);
+            color: var(--text-2);
+        }
+
+        .add-btn:hover,
+        .tool-btn:hover,
+        .seed-btn:hover {
+            background: var(--primary-soft);
+            border-color: var(--primary);
+            color: var(--primary-soft-text);
+        }
+
+        .add-btn {
+            margin-top: 4px;
+        }
+
+        .remove-btn {
+            height: 34px;
+            padding: 0 13px;
+            font-size: 0.8rem;
+            background: transparent;
+            border-color: var(--line-strong);
             color: var(--muted);
-            margin-top: 6px;
-            line-height: 1.35;
         }
 
-        .seed-row {
+        .remove-btn:hover {
+            background: var(--danger-soft);
+            border-color: var(--danger-line);
+            color: var(--danger);
+        }
+
+        .save-btn,
+        .download-btn {
+            width: auto;
+            height: 44px;
+            padding: 0 22px;
+            border-radius: var(--radius-sm);
+            font-size: 0.92rem;
+            font-weight: 600;
+            background: var(--primary);
+            color: var(--primary-text);
+            box-shadow: var(--shadow-1);
+        }
+
+        .save-btn:hover,
+        .download-btn:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-2);
+        }
+
+        .download-btn {
+            background: var(--surface);
+            border: 1px solid var(--line-strong);
+            color: var(--text);
+        }
+
+        .download-btn:hover {
+            background: var(--surface-3);
+            border-color: var(--muted);
+        }
+
+        /* ---------- day count pills ---------- */
+        .day-count-group {
+            padding: 16px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--surface-2);
+        }
+
+        .day-count-group label {
+            margin-bottom: 0;
+        }
+
+        .day-count-inline {
             display: flex;
-            gap: 10px;
             align-items: center;
+            gap: 16px;
             flex-wrap: wrap;
         }
 
-        .seed-row input {
-            flex: 1 1 220px;
-            min-width: 0;
-        }
-
-        .seed-btn {
-            margin: 0;
+        .day-count-inline label {
             white-space: nowrap;
         }
 
-        .notice {
-            padding: 13px 16px;
-            border-radius: 10px;
-            margin-bottom: 14px;
-            font-size: 0.9rem;
-            line-height: 1.45;
+        .day-count-options {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
         }
 
-        .notice strong {
-            display: block;
-            margin-bottom: 6px;
-        }
-
-        .notice ul {
-            margin: 0;
-            padding-left: 20px;
-        }
-
-        .notice li {
-            margin-top: 3px;
-        }
-
-        .notice.short {
-            background: #44131f;
-            color: #ffb9c6;
-            border: 1px solid #7f1d32;
-        }
-
-        .notice.warn {
-            background: #3d2f10;
-            color: #f5d999;
-            border: 1px solid #7a5c17;
-        }
-
-        .prefilled-item,
-        .subject-req-item {
-            background: linear-gradient(165deg, #0d1628 0%, #101a30 100%);
-            padding: 14px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            border: 1px solid #273656;
-        }
-
-        .prefilled-item .grid {
-            margin-bottom: 10px;
-        }
-
-        .prefilled-item .prefilled-day,
-        .prefilled-item .prefilled-period,
-        .prefilled-item .prefilled-activity {
+        .day-count-option {
+            width: 40px;
             height: 38px;
-            padding: 8px 12px;
+            padding: 0;
+            margin: 0;
+            border-radius: 10px;
+            border: 1px solid var(--line-strong);
+            background: var(--surface);
+            color: var(--text-2);
+            font-size: 0.86rem;
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            flex: 0 0 auto;
+        }
+
+        .day-count-option:hover {
+            border-color: var(--primary);
+            color: var(--primary-soft-text);
+        }
+
+        .day-count-option.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: var(--primary-text);
+            box-shadow: var(--shadow-primary);
+        }
+
+        /* ---------- repeating rows ----------
+           One header line instead of the same four labels on every row: the
+           lists get long, and repeating them made each entry three times taller
+           than the information in it. */
+        .row-head[hidden] {
+            display: none;
+        }
+
+        .row-head {
+            display: grid;
+            gap: 10px;
+            align-items: center;
+            padding: 2px 14px 7px;
+            font-size: 0.72rem;
+            font-weight: 650;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--faint);
+        }
+
+        .row-item {
+            position: relative;
+            display: grid;
+            gap: 10px;
+            align-items: start;
+            padding: 9px 14px;
+            margin-bottom: 7px;
+            border-radius: var(--radius-sm);
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+            transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+        }
+
+        .row-item:hover {
+            border-color: var(--line-strong);
+            background: var(--surface);
+        }
+
+        .cols-period {
+            grid-template-columns: minmax(104px, 0.9fr) minmax(116px, 1fr) minmax(116px, 1fr) minmax(84px, 0.7fr) 36px;
+        }
+
+        .cols-break {
+            grid-template-columns: minmax(150px, 1.4fr) minmax(116px, 1fr) minmax(116px, 1fr) 36px;
+        }
+
+        .cols-credit {
+            grid-template-columns: minmax(170px, 1.1fr) minmax(170px, 1fr) 36px;
+        }
+
+        .cols-prefilled {
+            grid-template-columns: minmax(104px, 0.8fr) minmax(190px, 1.3fr) minmax(150px, 1.1fr) 36px;
+        }
+
+        .cols-subject {
+            grid-template-columns: minmax(140px, 1.5fr) repeat(3, minmax(92px, 1fr)) 36px;
+        }
+
+        .cell {
+            min-width: 0;
+        }
+
+        .cell > label {
+            display: none;
+        }
+
+        .icon-btn {
+            display: grid;
+            place-items: center;
+            align-self: center;
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            margin: 0;
+            border-radius: 9px;
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--faint);
+        }
+
+        .icon-btn:hover {
+            background: var(--danger-soft);
+            border-color: var(--danger-line);
+            color: var(--danger);
+        }
+
+        .icon-btn svg {
+            width: 15px;
+            height: 15px;
+        }
+
+        .period-badge {
+            display: flex;
+            align-items: center;
+            height: 42px;
+            padding: 0 13px;
+            border-radius: var(--radius-sm);
+            background: var(--surface-3);
+            border: 1px solid var(--line);
+            color: var(--text);
+            font-weight: 650;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .period-badge.is-empty {
+            color: var(--faint);
+            font-weight: 500;
+        }
+
+        .period-badge.is-quiet {
+            background: transparent;
+            border-color: transparent;
+            color: var(--muted);
+            font-weight: 550;
+            padding-left: 2px;
         }
 
         .subject-req-item input[type="number"]::-webkit-outer-spin-button,
@@ -669,170 +834,126 @@
         .subject-req-item input[type="number"] {
             -moz-appearance: textfield;
             appearance: textfield;
+            font-variant-numeric: tabular-nums;
         }
 
-        .subject-limit-picker {
-            margin-top: 16px;
-            padding-top: 14px;
-            border-top: 1px solid #273656;
-        }
-
-        .time-picker-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 12px;
-            margin-top: 10px;
-            max-width: 420px;
-        }
-
-        .picker-field label {
-            font-size: 0.82rem;
+        .empty-hint {
             color: var(--muted);
-            margin-bottom: 6px;
+            font-size: 0.88rem;
+            line-height: 1.55;
+            padding: 16px 18px;
+            border: 1px dashed var(--line-strong);
+            border-radius: var(--radius);
+            background: var(--surface-2);
+            margin-bottom: 10px;
         }
 
-        .picker-field select {
-            text-align: center;
+        .empty-hint strong {
+            color: var(--text);
             font-weight: 600;
         }
 
-        .day-count-group {
-            padding: 14px;
-            border: 1px solid #2a3a5f;
-            border-radius: 12px;
-            background: linear-gradient(160deg, #0d1729 0%, #111d34 100%);
-        }
-
-        .day-count-group label {
-            margin-bottom: 10px;
-        }
-
-        .day-count-options {
+        /* ---------- checkbox pills ---------- */
+        .checkbox-group {
             display: flex;
-            flex-wrap: nowrap;
+            flex-wrap: wrap;
             gap: 8px;
-            overflow-x: auto;
-            padding-bottom: 4px;
-            align-items: center;
         }
 
-        .day-count-option {
-            border: 1px solid #32466f;
+        .checkbox-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px 8px 11px;
             border-radius: 999px;
-            background: #0a1425;
-            color: #d8e5ff;
-            padding: 9px 24px;
+            border: 1px solid var(--line-strong);
+            background: var(--surface-2);
+            cursor: pointer;
+            transition: border-color var(--dur) var(--ease), background var(--dur) var(--ease);
+        }
+
+        .checkbox-item:hover {
+            border-color: var(--primary);
+            background: var(--surface);
+        }
+
+        .checkbox-item:has(input:checked) {
+            background: var(--primary-soft);
+            border-color: var(--primary);
+        }
+
+        .checkbox-item input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
             margin: 0;
-            width: auto;
-            min-width: 66px;
-            height: 42px;
+            accent-color: var(--primary);
+            cursor: pointer;
             flex: 0 0 auto;
-            font-size: 0.88rem;
-            font-weight: 700;
-            line-height: 1;
-            box-shadow: none;
-            filter: none;
-            transition: all 160ms ease;
         }
 
-        .day-count-option:hover {
-            border-color: #4e6ea6;
-            background: #132440;
-            box-shadow: none;
-            transform: translateY(-1px);
-            filter: none;
-        }
-
-        .day-count-option.active {
-            border-color: #6a8bff;
-            background: linear-gradient(120deg, #1d4ed8 0%, #3b82f6 100%);
-            color: #f7faff;
-            box-shadow: 0 0 0 2px #6a8bff33;
-        }
-
-        .day-count-inline {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .day-count-inline label {
+        .checkbox-item label {
             margin: 0;
+            font-size: 0.85rem;
+            font-weight: 550;
+            color: var(--text-2);
+            cursor: pointer;
             white-space: nowrap;
-            min-width: 220px;
         }
 
-        *::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
+        .checkbox-item:has(input:checked) label {
+            color: var(--primary-soft-text);
+            font-weight: 600;
         }
 
-        *::-webkit-scrollbar-track {
-            background: #0a1120;
-        }
-
-        *::-webkit-scrollbar-thumb {
-            background: #334769;
-            border-radius: 999px;
-        }
-
-        *::-webkit-scrollbar-thumb:hover {
-            background: #425b87;
-        }
-
+        /* ---------- school day ---------- */
         .school-day-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 14px;
-        }
-
-        .break-item {
-            background: linear-gradient(165deg, #0d1628 0%, #101a30 100%);
-            padding: 14px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            border: 1px solid #273656;
-        }
-
-        .break-item .grid {
-            margin-bottom: 10px;
+            max-width: 560px;
         }
 
         .day-readout {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 12px;
-            margin-top: 18px;
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+            gap: 10px;
+            margin-top: 20px;
         }
 
         .readout-card {
-            background: #0a1425;
-            border: 1px solid #273656;
-            border-radius: 12px;
-            padding: 13px 15px;
+            padding: 15px 16px;
+            border-radius: var(--radius);
+            background: var(--surface-2);
+            border: 1px solid var(--line);
         }
 
         .readout-card .value {
-            font-family: 'Space Grotesk', 'Manrope', sans-serif;
-            font-size: 1.45rem;
+            font-family: var(--font-display);
+            font-size: 1.4rem;
             font-weight: 700;
-            color: #f5f8ff;
             line-height: 1.1;
+            letter-spacing: -0.02em;
+            color: var(--text);
             font-variant-numeric: tabular-nums;
         }
 
         .readout-card .label {
-            color: var(--muted);
-            font-size: 0.8rem;
             margin-top: 5px;
-            line-height: 1.35;
+            color: var(--muted);
+            font-size: 0.78rem;
+            line-height: 1.4;
+        }
+
+        .bell-preview:empty {
+            display: none;
         }
 
         .bell-preview {
             margin-top: 16px;
-            border: 1px solid #273656;
-            border-radius: 12px;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
             overflow: hidden;
+            background: var(--surface-2);
         }
 
         .bell-row {
@@ -840,9 +961,9 @@
             justify-content: space-between;
             align-items: baseline;
             gap: 14px;
-            padding: 9px 15px;
+            padding: 10px 16px;
             font-size: 0.87rem;
-            border-bottom: 1px solid var(--line-soft);
+            border-bottom: 1px solid var(--line);
         }
 
         .bell-row:last-child {
@@ -851,6 +972,7 @@
 
         .bell-row .bell-name {
             font-weight: 600;
+            color: var(--text);
         }
 
         .bell-row .bell-length {
@@ -860,7 +982,7 @@
         }
 
         .bell-row.is-break {
-            background: #0a1425;
+            background: var(--surface-3);
         }
 
         .bell-row.is-break .bell-name {
@@ -868,113 +990,457 @@
             font-weight: 500;
         }
 
-        .period-item {
-            background: linear-gradient(165deg, #0d1628 0%, #101a30 100%);
-            padding: 14px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-            border: 1px solid #273656;
+        /* ---------- alerts ---------- */
+        .school-day-problem,
+        .school-day-notice,
+        .error,
+        .success {
+            display: none;
+            position: relative;
+            padding: 13px 16px 13px 17px;
+            margin-top: 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid;
+            border-left-width: 3px;
+            font-size: 0.88rem;
+            line-height: 1.5;
         }
 
-        .period-item .grid {
-            margin-bottom: 10px;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-        }
-
-        .period-badge {
-            display: flex;
-            align-items: center;
-            height: 42px;
-            padding: 8px 12px;
-            border-radius: 10px;
-            background: #0a1425;
-            border: 1px solid #273656;
-            color: #dbe6ff;
-            font-weight: 700;
-            font-variant-numeric: tabular-nums;
-        }
-
-        .period-badge.is-empty {
-            color: var(--muted);
-            font-weight: 500;
+        .school-day-problem,
+        .error {
+            background: var(--danger-soft);
+            border-color: var(--danger-line);
+            border-left-color: var(--danger);
+            color: var(--danger);
+            font-weight: 550;
         }
 
         .school-day-notice {
-            display: none;
-            background: #3b2c10;
-            border: 1px solid #7a5c17;
-            color: #f5d999;
-            border-radius: 10px;
-            padding: 11px 15px;
-            margin-top: 14px;
-            font-size: 0.88rem;
-            line-height: 1.45;
+            background: var(--warn-soft);
+            border-color: var(--warn-line);
+            border-left-color: var(--warn);
+            color: var(--warn);
+            font-weight: 550;
         }
 
-        .alias-item {
-            background: linear-gradient(165deg, #0d1628 0%, #101a30 100%);
-            padding: 14px;
-            border-radius: 12px;
+        .success {
+            background: var(--good-soft);
+            border-color: var(--good-line);
+            border-left-color: var(--good);
+            color: var(--good);
+        }
+
+        .error {
+            margin: 18px 0;
+            white-space: pre-line;
+        }
+
+        .notice {
+            padding: 14px 17px;
+            border-radius: var(--radius-sm);
+            border: 1px solid;
+            border-left-width: 3px;
             margin-bottom: 12px;
-            border: 1px solid #273656;
-        }
-
-        .alias-item .grid {
-            margin-bottom: 10px;
-        }
-
-        .empty-hint {
-            color: var(--muted);
             font-size: 0.88rem;
+        }
+
+        .notice strong {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 650;
+        }
+
+        .notice ul {
+            margin: 0;
+            padding-left: 19px;
+        }
+
+        .notice li {
+            margin-top: 3px;
             line-height: 1.5;
-            padding: 14px;
-            border: 1px dashed #2f4166;
-            border-radius: 12px;
-            margin-bottom: 12px;
         }
 
-        .empty-hint strong {
-            color: #dbe6ff;
+        .notice.short {
+            background: var(--danger-soft);
+            border-color: var(--danger-line);
+            border-left-color: var(--danger);
+            color: var(--danger);
+        }
+
+        .notice.warn {
+            background: var(--warn-soft);
+            border-color: var(--warn-line);
+            border-left-color: var(--warn);
+            color: var(--warn);
+        }
+
+        /* ---------- misc form bits ---------- */
+        .subject-limit-picker {
+            margin-top: 20px;
+            padding-top: 18px;
+            border-top: 1px solid var(--line);
+        }
+
+        .time-picker-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+            margin-top: 10px;
+            max-width: 400px;
+        }
+
+        .picker-field label {
+            font-size: 0.78rem;
+            font-weight: 550;
+            color: var(--muted);
+            margin-bottom: 5px;
+        }
+
+        .picker-field select {
+            font-weight: 600;
+        }
+
+        .seed-row {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .seed-row input {
+            flex: 1 1 240px;
+            width: auto;
+        }
+
+        .seed-btn {
+            height: 42px;
+            flex: 0 0 auto;
+        }
+
+        /* ---------- loading ---------- */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 56px 20px;
+        }
+
+        .loading p {
+            margin-top: 18px;
+            color: var(--muted);
+            font-weight: 550;
+        }
+
+        .spinner {
+            width: 38px;
+            height: 38px;
+            margin: 0 auto;
+            border: 3px solid var(--line-strong);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 720ms linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ---------- results ---------- */
+        #results {
+            display: none;
+            animation: rise 320ms var(--ease) both;
+        }
+
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: none; }
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+            margin-bottom: 18px;
+        }
+
+        .results-header .section-title {
+            margin-bottom: 0;
         }
 
         .table-tools {
             display: flex;
             align-items: center;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
+            padding: 5px;
+            border-radius: 999px;
+            background: var(--surface-2);
+            border: 1px solid var(--line);
         }
 
         .tool-btn {
-            width: auto;
-            margin: 0;
-            padding: 8px 14px;
-            font-size: 0.84rem;
-            font-weight: 700;
-            background: #0a1425;
-            border: 1px solid #32466f;
-            color: #d8e5ff;
-            border-radius: 999px;
-            box-shadow: none;
-            filter: none;
+            height: 32px;
+            padding: 0 13px;
+            font-size: 0.81rem;
+            background: transparent;
+            border-color: transparent;
         }
 
         .tool-btn:hover {
-            background: #132440;
-            border-color: #4e6ea6;
-            box-shadow: none;
-            transform: translateY(-1px);
-            filter: none;
+            background: var(--surface);
+            border-color: var(--line-strong);
+            color: var(--text);
         }
 
         .zoom-level {
-            min-width: 52px;
+            min-width: 46px;
             text-align: center;
             font-variant-numeric: tabular-nums;
-            font-weight: 700;
+            font-weight: 650;
             color: var(--muted);
-            font-size: 0.84rem;
+            font-size: 0.81rem;
         }
 
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 12px;
+            margin-bottom: 22px;
+        }
+
+        .summary-card {
+            padding: 16px 18px;
+            border-radius: var(--radius);
+            background: var(--surface-2);
+            border: 1px solid var(--line);
+        }
+
+        .summary-card h3 {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--muted);
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            margin-bottom: 7px;
+        }
+
+        .summary-card .value {
+            font-family: var(--font-display);
+            font-size: 1.7rem;
+            font-weight: 700;
+            line-height: 1.05;
+            letter-spacing: -0.025em;
+            color: var(--text);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .summary-card .label {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 0.8rem;
+        }
+
+        .summary-card.requirement-card {
+            position: relative;
+            padding-bottom: 18px;
+        }
+
+        .summary-card.requirement-card::after {
+            content: '';
+            position: absolute;
+            left: 18px;
+            right: 18px;
+            bottom: 13px;
+            height: 4px;
+            border-radius: 999px;
+            background: var(--line-strong);
+        }
+
+        .summary-card.requirement-card::before {
+            content: '';
+            position: absolute;
+            left: 18px;
+            bottom: 13px;
+            height: 4px;
+            width: calc((100% - 36px) * var(--fill, 0));
+            border-radius: 999px;
+            z-index: 1;
+            transition: width 420ms var(--ease);
+        }
+
+        .summary-card.requirement-card.met {
+            background: var(--good-soft);
+            border-color: var(--good-line);
+        }
+
+        .summary-card.requirement-card.met::before {
+            background: var(--good);
+        }
+
+        .summary-card.requirement-card.met h3,
+        .summary-card.requirement-card.met .value {
+            color: var(--good);
+        }
+
+        .summary-card.requirement-card.unmet {
+            background: var(--danger-soft);
+            border-color: var(--danger-line);
+        }
+
+        .summary-card.requirement-card.unmet::before {
+            background: var(--danger);
+        }
+
+        .summary-card.requirement-card.unmet h3,
+        .summary-card.requirement-card.unmet .value {
+            color: var(--danger);
+        }
+
+        /* ---------- schedule table ---------- */
+        .schedule-table {
+            width: 100%;
+            overflow-x: auto;
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            background: var(--surface);
+        }
+
+        .schedule-table:fullscreen {
+            border-radius: 0;
+            padding: 20px;
+            background: var(--bg);
+        }
+
+        table {
+            width: 100%;
+            min-width: 940px;
+            border-collapse: separate;
+            border-spacing: 0;
+            table-layout: fixed;
+            background: transparent;
+        }
+
+        th,
+        td {
+            padding: 12px 11px;
+            text-align: left;
+            vertical-align: top;
+            border-bottom: 1px solid var(--line);
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        th {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: var(--surface-3);
+            color: var(--text-2);
+            font-size: 0.78rem;
+            font-weight: 650;
+            letter-spacing: 0.03em;
+            text-transform: uppercase;
+            border-bottom: 1px solid var(--line-strong);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr:hover td {
+            background: var(--surface-2);
+        }
+
+        th:first-child,
+        td.period-col {
+            position: sticky;
+            left: 0;
+            z-index: 1;
+            width: 148px;
+            background: var(--surface-3);
+            border-right: 1px solid var(--line);
+        }
+
+        th:first-child {
+            z-index: 3;
+        }
+
+        tbody tr:hover td.period-col {
+            background: var(--surface-3);
+        }
+
+        .period-name {
+            font-weight: 650;
+            color: var(--text);
+            font-size: 0.86rem;
+        }
+
+        .period-time {
+            margin-top: 2px;
+            color: var(--muted);
+            font-size: 0.76rem;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .schedule-block {
+            display: block;
+            padding: 6px 10px;
+            margin-bottom: 4px;
+            border-radius: 8px;
+            font-size: 0.82rem;
+            font-weight: 600;
+            background: hsl(var(--chip-hue, 240) 82% 95%);
+            border: 1px solid hsl(var(--chip-hue, 240) 62% 84%);
+            color: hsl(var(--chip-hue, 240) 58% 34%);
+            transition: transform var(--dur) var(--ease);
+        }
+
+        [data-theme="dark"] .schedule-block {
+            background: hsl(var(--chip-hue, 240) 46% 24%);
+            border-color: hsl(var(--chip-hue, 240) 48% 40%);
+            color: hsl(var(--chip-hue, 240) 78% 84%);
+        }
+
+        .schedule-block:last-child {
+            margin-bottom: 0;
+        }
+
+        .schedule-block.is-free {
+            background: var(--surface-3);
+            border-color: var(--line-strong);
+            color: var(--muted);
+            font-weight: 500;
+        }
+
+        .schedule-block.is-error {
+            background: var(--danger-soft);
+            border-color: var(--danger-line);
+            color: var(--danger);
+        }
+
+        .break-cell {
+            background: var(--surface-2);
+        }
+
+        .break-text {
+            display: block;
+            padding: 6px 10px;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            font-weight: 550;
+            color: var(--muted);
+            background: var(--surface-3);
+            border: 1px dashed var(--line-strong);
+            text-align: center;
+        }
+
+        .free-cell,
+        .error-cell {
+            background: transparent;
+        }
+
+        /* ---------- save panel ---------- */
         .results-actions {
             display: flex;
             flex-wrap: wrap;
@@ -983,118 +1449,276 @@
             margin-top: 18px;
         }
 
-        .results-actions .save-schedule-panel {
-            flex: 1 1 340px;
-            margin-bottom: 0;
+        .save-schedule-panel {
+            flex: 1 1 360px;
+            padding: 16px 18px;
+            border-radius: var(--radius);
+            background: var(--surface-2);
+            border: 1px solid var(--line);
         }
 
-        .schedule-table:fullscreen {
-            max-height: none;
-            border-radius: 0;
-            padding: 18px;
+        .export-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-content: flex-start;
         }
 
-        .school-day-problem {
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .download-btn svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .save-schedule-grid {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 12px;
+            align-items: end;
+        }
+
+        .save-status {
             display: none;
-            background: #3b1220;
-            border: 1px solid #7f1d3a;
-            color: #ffc9d6;
-            border-radius: 10px;
-            padding: 11px 15px;
-            margin-top: 14px;
-            font-size: 0.88rem;
-            line-height: 1.45;
+            margin-top: 10px;
+            font-size: 0.83rem;
+            font-weight: 550;
         }
 
-        @media (max-width: 920px) {
-            body {
-                padding: 14px;
+        .save-status.success {
+            display: block;
+            color: var(--good);
+        }
+
+        .save-status.error {
+            display: block;
+            color: var(--danger);
+        }
+
+        /* ---------- scrollbars ---------- */
+        *::-webkit-scrollbar {
+            width: 11px;
+            height: 11px;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        *::-webkit-scrollbar-thumb {
+            background: var(--line-strong);
+            border-radius: 999px;
+            border: 3px solid transparent;
+            background-clip: content-box;
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background: var(--muted);
+            background-clip: content-box;
+        }
+
+        /* ---------- responsive ---------- */
+        @media (max-width: 900px) {
+            .row-head {
+                display: none;
+            }
+
+            .row-item {
+                grid-template-columns: repeat(auto-fit, minmax(132px, 1fr)) !important;
+                padding: 34px 14px 12px;
+            }
+
+            .row-item .icon-btn {
+                position: absolute;
+                top: 5px;
+                right: 7px;
+            }
+
+            .cell > label {
+                display: block;
+                margin-bottom: 5px;
+                font-size: 0.75rem;
+                color: var(--muted);
             }
 
             .container {
-                padding: 22px;
-                border-radius: 20px;
+                padding: 0 16px 56px;
             }
 
             .section {
-                padding: 16px;
+                padding: 20px 18px;
+            }
+
+            form .section {
+                padding-left: 18px;
+            }
+
+            .hero {
+                padding: 22px 0 20px;
             }
 
             .results-header {
-                flex-direction: column;
                 align-items: stretch;
             }
 
-            .download-btn {
-                width: 100%;
-            }
-
-            .day-count-inline {
-                flex-direction: column;
-                align-items: flex-start;
-            }
-
-            .day-count-inline label {
-                min-width: 0;
+            .table-tools {
+                justify-content: center;
             }
 
             .save-schedule-grid {
                 grid-template-columns: 1fr;
             }
 
-            .save-btn {
+            .save-btn,
+            .download-btn {
                 width: 100%;
+            }
+
+            .results-actions .download-btn {
+                flex: 1 1 100%;
+            }
+
+            .day-count-inline {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+
+            .brand span {
+                display: none;
+            }
+        }
+
+        @media (max-width: 560px) {
+            .app-nav {
+                gap: 6px;
+            }
+
+            .nav-link {
+                padding: 8px 10px;
+                font-size: 0.82rem;
+            }
+
+            .account-chip {
+                display: none;
+            }
+        }
+
+        @page {
+            size: landscape;
+            margin: 12mm;
+        }
+
+        @media print {
+            body {
+                background: #fff;
+                background-image: none;
+            }
+
+            .app-nav,
+            .hero,
+            form,
+            .table-tools,
+            .results-actions,
+            .loading,
+            .browser-note,
+            .engine-status,
+            .saved-panel,
+            .sample-btn {
+                display: none !important;
+            }
+
+            .container {
+                max-width: none;
+                padding: 0;
+            }
+
+            .section {
+                border: none;
+                box-shadow: none;
+                padding: 0;
+            }
+
+            /* Print the timetable at full size, whatever the zoom is set to. */
+            #scheduleTableContainer {
+                transform: none !important;
+                width: auto !important;
+            }
+
+            .schedule-table {
+                height: auto !important;
+                max-height: none !important;
+                overflow: visible !important;
+                border: 1px solid #ccc;
+            }
+
+            table {
+                min-width: 0;
+            }
+
+            tr {
+                break-inside: avoid;
             }
         }
 
         @media (prefers-reduced-motion: reduce) {
-            * {
-                animation: none !important;
-                transition: none !important;
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
             }
         }
         /* ---- static build additions ---- */
         .nav-button {
-            background: none;
-            border: none;
             font: inherit;
             cursor: pointer;
+            background: none;
+            border: 1px solid transparent;
         }
 
-        .browser-note {
-            background: #10243d;
-            border: 1px solid #24487a;
-            color: #b9d4f5;
-            padding: 12px 16px;
-            border-radius: 10px;
+        .browser-note,
+        .engine-status {
+            padding: 13px 17px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--line);
+            border-left: 3px solid var(--primary);
+            background: var(--primary-soft);
+            color: var(--primary-soft-text);
+            font-size: 0.87rem;
+            line-height: 1.5;
             margin-bottom: 18px;
-            font-size: 0.88rem;
-            line-height: 1.45;
+        }
+
+        .browser-note strong {
+            font-weight: 650;
         }
 
         .engine-status {
             display: none;
-            background: #10243d;
-            border: 1px solid #24487a;
-            color: #b9d4f5;
-            padding: 12px 16px;
-            border-radius: 10px;
-            margin-bottom: 18px;
-            font-size: 0.9rem;
         }
 
         .saved-panel {
             display: none;
-            background: linear-gradient(165deg, #0d1628 0%, #101a30 100%);
-            border: 1px solid #273656;
-            border-radius: 14px;
-            padding: 20px;
-            margin-bottom: 22px;
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: var(--radius-lg);
+            padding: 22px 24px;
+            margin-bottom: 18px;
+            box-shadow: var(--shadow-1);
         }
 
         .saved-panel h2 {
-            margin: 0 0 6px;
-            font-size: 1.15rem;
+            font-family: var(--font-display);
+            font-size: 1.16rem;
+            font-weight: 650;
+            letter-spacing: -0.015em;
+            margin-bottom: 4px;
         }
 
         .saved-row {
@@ -1102,8 +1726,8 @@
             align-items: center;
             gap: 10px;
             flex-wrap: wrap;
-            padding: 11px 0;
-            border-top: 1px solid #273656;
+            padding: 13px 0;
+            border-top: 1px solid var(--line);
         }
 
         .saved-row .saved-name {
@@ -1113,23 +1737,57 @@
 
         .saved-row .saved-date {
             color: var(--muted);
-            font-size: 0.82rem;
+            font-size: 0.8rem;
+            font-variant-numeric: tabular-nums;
         }
 
         .saved-empty {
             color: var(--muted);
-            padding-top: 12px;
+            padding-top: 14px;
+            font-size: 0.89rem;
         }
     </style>
     <script src="https://cdn.jsdelivr.net/pyodide/v0.26.4/full/pyodide.js"></script>
 </head>
 <body>
     <div class="container">
-        <div class="app-nav">
+        <div class="app-nav" id="appNav">
+            <span class="brand">
+                <span class="brand-mark" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                         stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="4.5" width="18" height="16" rx="3"></rect>
+                        <path d="M3 9.5h18M8.5 2.5v4M15.5 2.5v4"></path>
+                    </svg>
+                </span>
+                <span>Schedule Generator</span>
+            </span>
+            <button type="button" class="theme-toggle" id="themeToggle" onclick="toggleTheme()"
+                    aria-label="Switch between light and dark">
+                <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"></path>
+                </svg>
+                <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="4.2"></circle>
+                    <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path>
+                </svg>
+            </button>
             <button type="button" class="nav-link nav-button" onclick="openSavedPanel()">Saved Schedules</button>
         </div>
-        <h1>Miss K's Class Schedule Generator</h1>
-        <p class="subtitle">Create optimized class schedules with custom requirements</p>
+        <header class="hero">
+            <h1>Miss K's Class Schedule Generator</h1>
+            <p class="subtitle">Set out your bell schedule and subject minimums, and let it work out a cycle that meets every one.</p>
+            <button type="button" class="sample-btn" onclick="loadSampleTimetable()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"></path>
+                    <path d="M14 2v6h6M8 13h8M8 17h5"></path>
+                </svg>
+                Load a sample timetable
+            </button>
+        </header>
         
         <form id="scheduleForm">
             <!-- Basic Configuration -->
@@ -1165,6 +1823,9 @@
                 <div class="form-group">
                     <label>Teaching Periods:</label>
                     <p class="help-text" style="margin-bottom: 12px;">Straight off your bell schedule - these are the times, exactly as they are. Periods are numbered in time order.</p>
+                    <div class="row-head cols-period" id="periodsHead" hidden>
+                        <span>Period</span><span>Starts</span><span>Ends</span><span>Length</span><span></span>
+                    </div>
                     <div id="periodsContainer"></div>
                     <button type="button" class="add-btn" onclick="addPeriodRow()">+ Add Period</button>
                 </div>
@@ -1172,6 +1833,9 @@
                 <div class="form-group" style="margin-bottom: 0;">
                     <label>Breaks:</label>
                     <p class="help-text" style="margin-bottom: 12px;">Lunch, recess, and anything else that is never teaching time.</p>
+                    <div class="row-head cols-break" id="breaksHead" hidden>
+                        <span>Name</span><span>Starts</span><span>Ends</span><span></span>
+                    </div>
                     <div id="breaksContainer"></div>
                     <button type="button" class="add-btn" onclick="addBreak()">+ Add Break</button>
                 </div>
@@ -1188,7 +1852,12 @@
                 <h2 class="section-title">Pre-filled Activities</h2>
                 <p class="help-text" style="margin-bottom: 15px;">Activities that must happen at specific times (e.g., PE on Day 1 Period 2)</p>
                 
+                <div class="row-head cols-prefilled" id="prefilledHead" hidden>
+                    <span>Day</span><span>Period</span><span>Activity</span><span></span>
+                </div>
                 <div id="prefilledContainer"></div>
+                <p class="empty-hint" id="prefilledEmpty">Nothing fixed yet. Add anything that has to
+                happen at a set time, like PE or a library slot, and the rest is built around it.</p>
                 <button type="button" class="add-btn" onclick="addPrefilled()">+ Add Pre-filled Activity</button>
             </div>
             
@@ -1197,11 +1866,16 @@
                 <h2 class="section-title">Subject Requirements</h2>
                 <p class="help-text" style="margin-bottom: 15px;">Define minimum time requirements for each subject</p>
                 
+                <div class="row-head cols-subject" id="subjectsHead" hidden>
+                    <span>Subject</span><span>Min / block</span><span>Min / day</span><span>Min / cycle</span><span></span>
+                </div>
                 <div id="subjectsContainer"></div>
                 <button type="button" class="add-btn" onclick="addSubject()">+ Add Subject</button>
                 
                 <div class="subject-limit-picker">
                     <label>Max Minutes Per Subject Per Day:</label>
+                    <p class="help-text">Leave at zero for no cap. Anything higher stops one subject
+                    taking over a day, but a cap below what a subject needs will make the cycle impossible.</p>
                     <div class="time-picker-grid">
                         <div class="picker-field">
                             <label for="maxPerDayHours">Hours</label>
@@ -1220,6 +1894,9 @@
                 <h2 class="section-title">Activity Credits</h2>
                 <p class="help-text" style="margin-bottom: 15px;">Time that already counts toward a subject without being scheduled as it. The activity keeps its own name on the timetable - only the tally moves, and the minutes come off what still has to be found.</p>
 
+                <div class="row-head cols-credit" id="aliasesHead" hidden>
+                    <span>Activity or break</span><span>Counts toward</span><span></span>
+                </div>
                 <div id="aliasesContainer"></div>
                 <datalist id="creditableNames"></datalist>
                 <button type="button" class="add-btn" onclick="addAlias()">+ Add Credit</button>
@@ -1229,7 +1906,8 @@
 
             <!-- Priority Settings -->
             <div class="section">
-                <h2 class="section-title">Priority Settings</h2>
+                <h2 class="section-title">Priority Settings<span class="optional-tag">Optional</span></h2>
+                <p class="help-text" style="margin-bottom: 18px;">Every setting here is a preference, not a rule - leave the whole section alone, fill in part of it, or set all of it. The schedule still meets every minimum either way; these only nudge where things land in the day.</p>
                 
                 <div class="form-group">
                     <label>Morning Periods:</label>
@@ -1308,7 +1986,32 @@
                         </div>
                         <p id="saveScheduleStatus" class="save-status"></p>
                     </div>
-                    <button class="download-btn" onclick="downloadCSV()">Download CSV</button>
+                    <div class="export-buttons">
+                        <button class="download-btn" onclick="downloadScheduleImage()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <rect x="3" y="3" width="18" height="18" rx="2.5"></rect>
+                                <circle cx="8.8" cy="8.8" r="1.8"></circle>
+                                <path d="M21 15.5l-5-5L5 21"></path>
+                            </svg>
+                            Download image
+                        </button>
+                        <button class="download-btn" onclick="printSchedule()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M6 9V3h12v6M6 18H4a1 1 0 01-1-1v-5a2 2 0 012-2h14a2 2 0 012 2v5a1 1 0 01-1 1h-2"></path>
+                                <rect x="6" y="14" width="12" height="7" rx="1"></rect>
+                            </svg>
+                            Print / PDF
+                        </button>
+                        <button class="download-btn" onclick="downloadCSV()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"></path>
+                            </svg>
+                            Download CSV
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1321,24 +2024,42 @@
         let periodsList = [];
         let subjectsList = [];
         const DAY_COUNT_OPTIONS = Array.from({length: 12}, (_, i) => i + 1);
-        // The school day is whatever the teacher types: the two outer bells, the
-        // periods, and the breaks. Nothing here is calculated - these are just the
-        // times the app opens with, and every one of them is editable.
-        const DEFAULT_SCHOOL_DAY = {start: '08:41', end: '15:10'};
-        const DEFAULT_PERIOD_ROWS = [
-            {start: '08:41', end: '09:24'},
-            {start: '09:24', end: '10:13'},
-            {start: '10:18', end: '11:08'},
-            {start: '11:08', end: '11:57'},
-            {start: '12:41', end: '13:30'},
-            {start: '13:50', end: '14:20'},
-            {start: '14:20', end: '15:10'}
-        ];
-        const DEFAULT_BREAKS = [
-            {name: 'Snack', start: '10:13', end: '10:18'},
-            {name: 'Lunch', start: '11:57', end: '12:41'},
-            {name: 'Recess', start: '13:30', end: '13:50'}
-        ];
+        // The page opens empty. This is one real timetable kept as a sample, so
+        // there is something to look at without typing a whole school day in
+        // first - it is only ever loaded by pressing the button.
+        const SAMPLE = {
+            day: {start: '08:41', end: '15:10'},
+            periods: [
+                {start: '08:41', end: '09:24'},
+                {start: '09:24', end: '10:13'},
+                {start: '10:18', end: '11:08'},
+                {start: '11:08', end: '11:57'},
+                {start: '12:41', end: '13:30'},
+                {start: '13:50', end: '14:20'},
+                {start: '14:20', end: '15:10'}
+            ],
+            breaks: [
+                {name: 'Snack', start: '10:13', end: '10:18'},
+                {name: 'Lunch', start: '11:57', end: '12:41'},
+                {name: 'Recess', start: '13:30', end: '13:50'}
+            ],
+            subjects: [
+                {name: 'ELAL', minBlock: 10, minDay: 20, minCycle: 576},
+                {name: 'Math', minBlock: 20, minDay: 20, minCycle: 288},
+                {name: 'Science', minBlock: 10, minDay: 10, minCycle: 192},
+                {name: 'Social', minBlock: 10, minDay: 10, minCycle: 192},
+                {name: 'Religion', minBlock: 5, minDay: 20, minCycle: 192}
+            ],
+            preFilled: [
+                ['Day 1', 'period_2', 'PE'],
+                ['Day 2', 'period_7', 'Music'],
+                ['Day 4', 'period_4', 'Music'],
+                ['Day 5', 'period_2', 'DPA'],
+                ['Day 6', 'period_7', 'Learning Commons']
+            ],
+            numDays: 6,
+            maxPerDay: 120
+        };
         // Periods starting before this are "morning" unless the teacher says otherwise.
         const MIDDAY_MINUTES = 12 * 60;
         let periodRows = [];
@@ -1347,6 +2068,23 @@
         let schoolDayError = '';
         let priorityDefaultsApplied = false;
         
+        function toggleTheme() {
+            const root = document.documentElement;
+            const next = root.dataset.theme === 'dark' ? 'light' : 'dark';
+            root.dataset.theme = next;
+            try {
+                localStorage.setItem('class-schedule-generator/theme', next);
+            } catch (_error) {
+                // A browser with storage blocked still gets the theme for this visit.
+            }
+        }
+
+        // The top bar only grows a hairline once the page is scrolled under it.
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('appNav');
+            if (nav) nav.classList.toggle('is-stuck', window.scrollY > 4);
+        }, {passive: true});
+
         // Initialize default configuration
         window.onload = function() {
             initializeDefaults();
@@ -1361,39 +2099,61 @@
         });
         
         function initializeDefaults() {
-            document.getElementById('schoolStart').value = DEFAULT_SCHOOL_DAY.start;
-            document.getElementById('schoolEnd').value = DEFAULT_SCHOOL_DAY.end;
-            periodRows = DEFAULT_PERIOD_ROWS.map(item => ({...item}));
-            breaksList = DEFAULT_BREAKS.map(item => ({...item}));
+            document.getElementById('schoolStart').value = '';
+            document.getElementById('schoolEnd').value = '';
+            periodRows = [];
+            breaksList = [];
+            subjectsList = [];
+            aliasesList = [];
+
+            renderDayCountSelector();
+            setNumDays(SAMPLE.numDays);
+            // No cap to begin with, so nothing quietly limits a subject before
+            // the teacher has asked for it.
+            initializeMaxPerDayPicker(0);
+
+            renderPeriods();
+            renderBreaks();
+            renderSubjects();
+            renderAliases();
+            refreshSchoolDay();
+            loadDefaultScheduleName();
+        }
+
+        /**
+         * Fill the form in from the sample timetable. Only ever runs from the
+         * button, and asks first if there is anything to overwrite.
+         */
+        function loadSampleTimetable() {
+            const hasWork = periodRows.length || breaksList.length || subjectsList.length
+                || document.querySelector('#prefilledContainer .prefilled-item');
+            if (hasWork && !confirm('Replace everything on this form with the sample timetable?')) {
+                return;
+            }
+
+            document.getElementById('schoolStart').value = SAMPLE.day.start;
+            document.getElementById('schoolEnd').value = SAMPLE.day.end;
+            periodRows = SAMPLE.periods.map(item => ({...item}));
+            breaksList = SAMPLE.breaks.map(item => ({...item}));
+            subjectsList = SAMPLE.subjects.map(item => ({...item}));
+            aliasesList = [];
+            priorityDefaultsApplied = false;
+
+            setNumDays(SAMPLE.numDays);
+            initializeMaxPerDayPicker(SAMPLE.maxPerDay);
+
+            // The periods have to exist before the priority lists are built, or
+            // morning and afternoon get worked out against the previous day.
             renderPeriods();
             renderBreaks();
             refreshSchoolDay();
-            renderDayCountSelector();
-            setNumDays(getNumDays());
-            initializeMaxPerDayPicker(120);
-            
-            // Add default subjects
-            const defaultSubjects = [
-                {name: 'ELAL', minBlock: 10, minDay: 20, minCycle: 576},
-                {name: 'Math', minBlock: 20, minDay: 20, minCycle: 288},
-                {name: 'Science', minBlock: 10, minDay: 10, minCycle: 192},
-                {name: 'Social', minBlock: 10, minDay: 10, minCycle: 192},
-                {name: 'Religion', minBlock: 5, minDay: 20, minCycle: 192}
-            ];
-            
-            subjectsList = defaultSubjects;
             renderSubjects();
-            
-            // Add default pre-filled activities
-            addPrefilled('Day 1', 'period_2', 'PE');
-            addPrefilled('Day 2', 'period_7', 'Music');
-            addPrefilled('Day 4', 'period_4', 'Music');
-            addPrefilled('Day 5', 'period_2', 'DPA');
-            addPrefilled('Day 6', 'period_7', 'Learning Commons');
-            
-            updatePriorityCheckboxes();
             renderAliases();
-            loadDefaultScheduleName();
+
+            document.getElementById('prefilledContainer').innerHTML = '';
+            SAMPLE.preFilled.forEach(([day, period, activity]) => addPrefilled(day, period, activity));
+
+            document.getElementById('schoolStart').scrollIntoView({behavior: 'smooth', block: 'center'});
         }
 
         function getNumDays() {
@@ -1635,10 +2395,17 @@
             const result = buildSchoolDay();
             schoolDayError = result.error;
 
+            // A form nobody has filled in yet is empty, not wrong - the empty
+            // states say what to do, so the red box stays out of the way until
+            // there is something to actually be wrong about.
+            const untouched = !periodRows.length && !breaksList.length
+                && !document.getElementById('schoolStart').value
+                && !document.getElementById('schoolEnd').value;
+
             const problem = document.getElementById('schoolDayProblem');
             if (problem) {
-                problem.textContent = result.error;
-                problem.style.display = result.error ? 'block' : 'none';
+                problem.textContent = untouched ? '' : result.error;
+                problem.style.display = !untouched && result.error ? 'block' : 'none';
             }
 
             const notice = document.getElementById('schoolDayNotice');
@@ -1661,38 +2428,60 @@
             renderBellPreview();
         }
 
+        // A row's delete control: an icon at the end of the line rather than a
+        // button on a line of its own, which is what made the lists so tall.
+        function removeRowButton(handler, label) {
+            const safe = escapeHtml(label);
+            return `<button type="button" class="icon-btn" onclick="${handler}" title="${safe}" aria-label="${safe}">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                            <path d="M6 6l12 12M18 6L6 18"></path>
+                        </svg>
+                    </button>`;
+        }
+
+        // The column header only makes sense when there is a row under it.
+        function syncRowHead(headId, hasRows) {
+            const head = document.getElementById(headId);
+            if (head) head.hidden = !hasRows;
+        }
+
         // ---- teaching periods ---------------------------------------------
         function renderPeriods() {
             const container = document.getElementById('periodsContainer');
             if (!container) return;
 
-            container.innerHTML = '';
+            container.innerHTML = periodRows.length ? '' : `
+                <p class="empty-hint">No periods yet. Add one for each teaching block in your day -
+                the times exactly as they are on your bell schedule.</p>
+            `;
+            syncRowHead('periodsHead', periodRows.length > 0);
+
             periodRows.forEach((row, index) => {
                 const div = document.createElement('div');
-                div.className = 'period-item';
+                div.className = 'period-item row-item cols-period';
                 div.dataset.index = String(index);
                 div.innerHTML = `
-                    <div class="grid">
-                        <div>
-                            <label>Period:</label>
-                            <div class="period-badge" data-role="name">-</div>
-                        </div>
-                        <div>
-                            <label>Starts:</label>
-                            <input type="time" class="period-start" value="${escapeHtml(formatTimeInput(row.start))}"
-                                   onchange="updatePeriodRow(${index}, 'start', this.value)" required>
-                        </div>
-                        <div>
-                            <label>Ends:</label>
-                            <input type="time" class="period-end" value="${escapeHtml(formatTimeInput(row.end))}"
-                                   onchange="updatePeriodRow(${index}, 'end', this.value)" required>
-                        </div>
-                        <div>
-                            <label>Length:</label>
-                            <div class="period-badge" data-role="length">-</div>
-                        </div>
+                    <div class="cell">
+                        <label>Period</label>
+                        <div class="period-badge" data-role="name">-</div>
                     </div>
-                    <button type="button" class="remove-btn" onclick="removePeriodRow(${index})">Remove</button>
+                    <div class="cell">
+                        <label>Starts</label>
+                        <input type="time" class="period-start" value="${escapeHtml(formatTimeInput(row.start))}"
+                               aria-label="Start time for period ${index + 1}"
+                               onchange="updatePeriodRow(${index}, 'start', this.value)" required>
+                    </div>
+                    <div class="cell">
+                        <label>Ends</label>
+                        <input type="time" class="period-end" value="${escapeHtml(formatTimeInput(row.end))}"
+                               aria-label="End time for period ${index + 1}"
+                               onchange="updatePeriodRow(${index}, 'end', this.value)" required>
+                    </div>
+                    <div class="cell">
+                        <label>Length</label>
+                        <div class="period-badge is-quiet" data-role="length">-</div>
+                    </div>
+                    ${removeRowButton(`removePeriodRow(${index})`, 'Remove this period')}
                 `;
                 container.appendChild(div);
             });
@@ -1753,29 +2542,36 @@
             const container = document.getElementById('breaksContainer');
             if (!container) return;
 
-            container.innerHTML = '';
+            container.innerHTML = breaksList.length ? '' : `
+                <p class="empty-hint">No breaks yet. Add lunch, recess, or anything else that is
+                never teaching time - periods are built around them.</p>
+            `;
+            syncRowHead('breaksHead', breaksList.length > 0);
+
             breaksList.forEach((item, index) => {
+                const name = String(item.name || '');
                 const div = document.createElement('div');
-                div.className = 'break-item';
+                div.className = 'break-item row-item cols-break';
                 div.innerHTML = `
-                    <div class="grid">
-                        <div>
-                            <label>Name:</label>
-                            <input type="text" class="break-name" value="${escapeHtml(String(item.name || ''))}"
-                                   placeholder="e.g., Lunch" onchange="updateBreak(${index}, 'name', this.value)" required>
-                        </div>
-                        <div>
-                            <label>Starts:</label>
-                            <input type="time" class="break-start" value="${escapeHtml(formatTimeInput(item.start))}"
-                                   onchange="updateBreak(${index}, 'start', this.value)" required>
-                        </div>
-                        <div>
-                            <label>Ends:</label>
-                            <input type="time" class="break-end" value="${escapeHtml(formatTimeInput(item.end))}"
-                                   onchange="updateBreak(${index}, 'end', this.value)" required>
-                        </div>
+                    <div class="cell">
+                        <label>Name</label>
+                        <input type="text" class="break-name" value="${escapeHtml(name)}"
+                               placeholder="e.g., Lunch" aria-label="Break name"
+                               onchange="updateBreak(${index}, 'name', this.value)" required>
                     </div>
-                    <button type="button" class="remove-btn" onclick="removeBreak(${index})">Remove</button>
+                    <div class="cell">
+                        <label>Starts</label>
+                        <input type="time" class="break-start" value="${escapeHtml(formatTimeInput(item.start))}"
+                               aria-label="Break start time"
+                               onchange="updateBreak(${index}, 'start', this.value)" required>
+                    </div>
+                    <div class="cell">
+                        <label>Ends</label>
+                        <input type="time" class="break-end" value="${escapeHtml(formatTimeInput(item.end))}"
+                               aria-label="Break end time"
+                               onchange="updateBreak(${index}, 'end', this.value)" required>
+                    </div>
+                    ${removeRowButton(`removeBreak(${index})`, 'Remove this break')}
                 `;
                 container.appendChild(div);
             });
@@ -1808,6 +2604,11 @@
             const container = document.getElementById('dayReadout');
             if (!container) return;
 
+            if (!periodsList.length) {
+                container.innerHTML = '';
+                return;
+            }
+
             const teaching = getTeachingPeriods();
             const teachingPerDay = teaching.reduce((total, p) => total + p.duration, 0);
             const breakPerDay = periodsList
@@ -1822,7 +2623,7 @@
             const cards = [
                 {
                     value: `${teachingPerDay.toLocaleString()} min`,
-                    label: `Teaching time a day, across ${teaching.length} ${teaching.length === 1 ? 'period' : 'periods'}`
+                    label: `Teaching time a day (${teaching.length} ${teaching.length === 1 ? 'period' : 'periods'})`
                 },
                 {
                     value: `${breakPerDay.toLocaleString()} min`,
@@ -1844,11 +2645,11 @@
             if (prefilled > 0) {
                 cards.push({
                     value: `-${prefilled.toLocaleString()} min`,
-                    label: 'Booked by pre-filled activities - each one takes its whole period'
+                    label: 'Booked by pre-filled activities'
                 });
                 cards.push({
                     value: `${Math.max(0, cycleTeaching - prefilled).toLocaleString()} min`,
-                    label: 'Left for the subject minimums - the figure the generator checks against'
+                    label: 'Left for the subject minimums'
                 });
             }
 
@@ -1899,6 +2700,7 @@
             if (!container) return;
 
             refreshCreditableNames();
+            syncRowHead('aliasesHead', aliasesList.length > 0);
 
             if (!aliasesList.length) {
                 container.innerHTML = `
@@ -1917,25 +2719,24 @@
             container.innerHTML = '';
             aliasesList.forEach((alias, index) => {
                 const div = document.createElement('div');
-                div.className = 'alias-item';
+                div.className = 'alias-item row-item cols-credit';
                 div.innerHTML = `
-                    <div class="grid">
-                        <div>
-                            <label>Activity or Break:</label>
-                            <input type="text" class="alias-name" list="creditableNames"
-                                   value="${escapeHtml(String(alias.name || ''))}"
-                                   placeholder="e.g., Learning Commons"
-                                   onchange="updateAlias(${index}, 'name', this.value)">
-                        </div>
-                        <div>
-                            <label>Counts toward:</label>
-                            <select class="alias-subject" onchange="updateAlias(${index}, 'subject', this.value)">
-                                <option value="">- pick a subject -</option>
-                                ${subjectOptions}
-                            </select>
-                        </div>
+                    <div class="cell">
+                        <label>Activity or break</label>
+                        <input type="text" class="alias-name" list="creditableNames"
+                               value="${escapeHtml(String(alias.name || ''))}"
+                               placeholder="e.g., Learning Commons" aria-label="Activity or break name"
+                               onchange="updateAlias(${index}, 'name', this.value)">
                     </div>
-                    <button type="button" class="remove-btn" onclick="removeAlias(${index})">Remove</button>
+                    <div class="cell">
+                        <label>Counts toward</label>
+                        <select class="alias-subject" aria-label="Subject this counts toward"
+                                onchange="updateAlias(${index}, 'subject', this.value)">
+                            <option value="">- pick a subject -</option>
+                            ${subjectOptions}
+                        </select>
+                    </div>
+                    ${removeRowButton(`removeAlias(${index})`, 'Remove this credit')}
                 `;
                 container.appendChild(div);
                 div.querySelector('.alias-subject').value = alias.subject || '';
@@ -2202,42 +3003,55 @@
         
         function renderSubjects() {
             const container = document.getElementById('subjectsContainer');
-            container.innerHTML = '';
-            
+            container.innerHTML = subjectsList.length ? '' : `
+                <p class="empty-hint">No subjects yet. Add each one you need to timetable, with the
+                least it can usefully be taught in and how much it needs per day and per cycle.</p>
+            `;
+            syncRowHead('subjectsHead', subjectsList.length > 0);
+
             subjectsList.forEach((subject, index) => {
                 const div = document.createElement('div');
-                div.className = 'subject-req-item';
+                div.className = 'subject-req-item row-item cols-subject';
                 div.innerHTML = `
-                    <div class="grid">
-                        <div>
-                            <label>Subject Name:</label>
-                            <input type="text" class="subject-name" value="${subject.name}" onchange="updateSubject(${index}, 'name', this.value)" required>
-                        </div>
-                        <div>
-                            <label>Min per Block (min):</label>
-                            <input type="number" class="subject-min-block" value="${subject.minBlock}" onchange="updateSubject(${index}, 'minBlock', parseInt(this.value, 10))" onblur="validateSubjectRequirementInput(this)" required>
-                            <p class="field-error"></p>
-                        </div>
-                        <div>
-                            <label>Min per Day (min):</label>
-                            <input type="number" class="subject-min-day" value="${subject.minDay}" onchange="updateSubject(${index}, 'minDay', parseInt(this.value, 10))" onblur="validateSubjectRequirementInput(this)" required>
-                            <p class="field-error"></p>
-                        </div>
-                        <div>
-                            <label>Min per Cycle (min):</label>
-                            <input type="number" class="subject-min-cycle" value="${subject.minCycle}" onchange="updateSubject(${index}, 'minCycle', parseInt(this.value, 10))" onblur="validateSubjectRequirementInput(this)" required>
-                            <p class="field-error"></p>
-                        </div>
+                    <div class="cell">
+                        <label>Subject</label>
+                        <input type="text" class="subject-name" value="${escapeHtml(subject.name)}"
+                               aria-label="Subject name"
+                               onchange="updateSubject(${index}, 'name', this.value)" required>
                     </div>
-                    <button type="button" class="remove-btn" onclick="removeSubject(${index})">Remove</button>
+                    <div class="cell">
+                        <label>Min / block</label>
+                        <input type="number" class="subject-min-block" value="${subject.minBlock}"
+                               aria-label="Minimum minutes per block"
+                               onchange="updateSubject(${index}, 'minBlock', parseInt(this.value, 10))"
+                               onblur="validateSubjectRequirementInput(this)" required>
+                        <p class="field-error"></p>
+                    </div>
+                    <div class="cell">
+                        <label>Min / day</label>
+                        <input type="number" class="subject-min-day" value="${subject.minDay}"
+                               aria-label="Minimum minutes per day"
+                               onchange="updateSubject(${index}, 'minDay', parseInt(this.value, 10))"
+                               onblur="validateSubjectRequirementInput(this)" required>
+                        <p class="field-error"></p>
+                    </div>
+                    <div class="cell">
+                        <label>Min / cycle</label>
+                        <input type="number" class="subject-min-cycle" value="${subject.minCycle}"
+                               aria-label="Minimum minutes per cycle"
+                               onchange="updateSubject(${index}, 'minCycle', parseInt(this.value, 10))"
+                               onblur="validateSubjectRequirementInput(this)" required>
+                        <p class="field-error"></p>
+                    </div>
+                    ${removeRowButton(`removeSubject(${index})`, 'Remove this subject')}
                 `;
                 container.appendChild(div);
             });
-            
+
             updatePriorityCheckboxes();
             renderAliases();
         }
-        
+
         function addSubject() {
             subjectsList.push({
                 name: `Subject ${subjectsList.length + 1}`,
@@ -2312,40 +3126,45 @@
         
         function addPrefilled(day = '', period = '', activity = '') {
             const container = document.getElementById('prefilledContainer');
-            const dayOptions = buildDayOptions(day);
-            const periodOptions = buildPeriodOptions(period);
-            
             const div = document.createElement('div');
-            div.className = 'prefilled-item';
+            div.className = 'prefilled-item row-item cols-prefilled';
             div.innerHTML = `
-                <div class="grid">
-                    <div>
-                        <label>Day:</label>
-                        <select class="prefilled-day" onchange="renderDayReadout()" required>
-                            ${dayOptions}
-                        </select>
-                    </div>
-                    <div>
-                        <label>Period:</label>
-                        <select class="prefilled-period" onchange="renderDayReadout()" required>
-                            ${periodOptions}
-                        </select>
-                    </div>
-                    <div>
-                        <label>Activity:</label>
-                        <input type="text" class="prefilled-activity" value="${activity}" placeholder="e.g., PE"
-                               onchange="renderDayReadout()" required>
-                    </div>
+                <div class="cell">
+                    <label>Day</label>
+                    <select class="prefilled-day" aria-label="Day" onchange="renderDayReadout()" required>
+                        ${buildDayOptions(day)}
+                    </select>
                 </div>
-                <button type="button" class="remove-btn" onclick="removePrefilled(this)">Remove</button>
+                <div class="cell">
+                    <label>Period</label>
+                    <select class="prefilled-period" aria-label="Period" onchange="renderDayReadout()" required>
+                        ${buildPeriodOptions(period)}
+                    </select>
+                </div>
+                <div class="cell">
+                    <label>Activity</label>
+                    <input type="text" class="prefilled-activity" value="${escapeHtml(activity)}"
+                           placeholder="e.g., PE" aria-label="Activity name"
+                           onchange="renderDayReadout()" required>
+                </div>
+                ${removeRowButton('removePrefilled(this.parentElement)', 'Remove this activity')}
             `;
             container.appendChild(div);
+            syncPrefilledEmpty();
             renderDayReadout();
             refreshCreditableNames();
         }
 
-        function removePrefilled(button) {
-            button.parentElement.remove();
+        function syncPrefilledEmpty() {
+            const has = !!document.querySelector('#prefilledContainer .prefilled-item');
+            const hint = document.getElementById('prefilledEmpty');
+            if (hint) hint.hidden = has;
+            syncRowHead('prefilledHead', has);
+        }
+
+        function removePrefilled(row) {
+            row.remove();
+            syncPrefilledEmpty();
             renderDayReadout();
             renderAliasNotice();
         }
@@ -2625,17 +3444,17 @@
             summaryContainer.innerHTML = `
                 <div class="summary-card">
                     <h3>Total Available Time</h3>
-                    <div class="value">${summary.total_available}</div>
+                    <div class="value">${summary.total_available.toLocaleString()}</div>
                     <div class="label">minutes</div>
                 </div>
                 <div class="summary-card">
                     <h3>Total Assigned</h3>
-                    <div class="value">${summary.total_assigned}</div>
+                    <div class="value">${summary.total_assigned.toLocaleString()}</div>
                     <div class="label">minutes</div>
                 </div>
                 <div class="summary-card">
                     <h3>Free Time</h3>
-                    <div class="value">${summary.total_free}</div>
+                    <div class="value">${summary.total_free.toLocaleString()}</div>
                     <div class="label">minutes</div>
                 </div>
             `;
@@ -2646,10 +3465,13 @@
                 const isMet = total >= required;
                 const card = document.createElement('div');
                 card.className = `summary-card requirement-card ${isMet ? 'met' : 'unmet'}`;
+                // The bar underneath fills to however much of the requirement is met.
+                const fill = required > 0 ? Math.min(1, total / required) : 1;
+                card.style.setProperty('--fill', String(fill));
                 card.innerHTML = `
-                    <h3>${subject}</h3>
-                    <div class="value">${total}</div>
-                    <div class="label">of ${required} min required</div>
+                    <h3>${escapeHtml(subject)}</h3>
+                    <div class="value">${total.toLocaleString()}</div>
+                    <div class="label">of ${required.toLocaleString()} min required</div>
                 `;
                 summaryContainer.appendChild(card);
             }
@@ -2820,14 +3642,12 @@
 
         function renderScheduleBlock(blockText) {
             const subjectName = extractSubjectName(blockText);
-            const colors = getSubjectColors(subjectName);
-            const safeText = escapeHtml(blockText);
-            return `
-                <span
-                    class="schedule-block"
-                    style="--chip-bg:${colors.bg}; --chip-border:${colors.border}; --chip-glow:${colors.glow}; --chip-text:${colors.text};"
-                >${safeText}</span>
-            `;
+            const normalized = subjectName.trim().toUpperCase();
+            const kind = normalized.startsWith('FREE') ? ' is-free'
+                : normalized === 'ERROR' ? ' is-error'
+                : '';
+            return `<span class="schedule-block${kind}" style="--chip-hue:${getSubjectHue(subjectName)}">` +
+                `${escapeHtml(blockText)}</span>`;
         }
 
         function extractSubjectName(blockText) {
@@ -2846,25 +3666,10 @@
             return Math.abs(hash);
         }
 
-        function getSubjectColors(subjectName) {
-            const normalized = (subjectName || '').trim().toUpperCase();
-            const fixed = {
-                'FREE': {bg: '#1b2740', border: '#3d5b8a', glow: '#4d7cff40', text: '#cddcff'},
-                'BREAK': {bg: '#1f293b', border: '#64748b', glow: '#64748b2e', text: '#dbe6ff'},
-                'N/A': {bg: '#1f293b', border: '#64748b', glow: '#64748b2e', text: '#dbe6ff'},
-                'ERROR': {bg: '#3a1721', border: '#ef4444', glow: '#ef444444', text: '#fecaca'}
-            };
-            if (fixed[normalized]) return fixed[normalized];
-
-            const hue = hashString(normalized || 'SUBJECT') % 360;
-            return {
-                bg: `hsla(${hue}, 80%, 42%, 0.25)`,
-                border: `hsla(${hue}, 85%, 68%, 0.58)`,
-                glow: `hsla(${hue}, 90%, 62%, 0.25)`,
-                text: '#ecf3ff'
-            };
+        function getSubjectHue(subjectName) {
+            return hashString((subjectName || '').trim().toUpperCase() || 'SUBJECT') % 360;
         }
-        
+
         function getCellClass(value, columnIndex) {
             const classes = [];
             const normalized = (value || '').trim().toUpperCase();
@@ -2883,6 +3688,282 @@
             return classes.join(' ');
         }
         
+        // ---- exporting the calendar -----------------------------------------
+        // The picture is drawn from the same CSV the table is built from, rather
+        // than screenshotting the page: it comes out crisp at any size, always in
+        // the light palette a printout wants, and does not depend on a library
+        // re-implementing the stylesheet.
+        const EXPORT = {
+            pad: 34,
+            titleGap: 26,
+            headerHeight: 36,
+            periodColumn: 158,
+            dayColumn: 152,
+            minRowHeight: 54,
+            chipHeight: 26,
+            chipGap: 5,
+            cellPadding: 9,
+            ink: '#101528',
+            muted: '#626a80',
+            line: '#e6e9f2',
+            lineStrong: '#d5dae8',
+            headerFill: '#f0f2f8',
+            periodFill: '#f8f9fd',
+            paper: '#ffffff'
+        };
+
+        function roundedRect(ctx, x, y, width, height, radius) {
+            if (ctx.roundRect) {
+                ctx.beginPath();
+                ctx.roundRect(x, y, width, height, radius);
+                return;
+            }
+            const r = Math.min(radius, width / 2, height / 2);
+            ctx.beginPath();
+            ctx.moveTo(x + r, y);
+            ctx.arcTo(x + width, y, x + width, y + height, r);
+            ctx.arcTo(x + width, y + height, x, y + height, r);
+            ctx.arcTo(x, y + height, x, y, r);
+            ctx.arcTo(x, y, x + width, y, r);
+            ctx.closePath();
+        }
+
+        function fitText(ctx, text, maxWidth) {
+            if (ctx.measureText(text).width <= maxWidth) return text;
+            let trimmed = text;
+            while (trimmed.length > 1 && ctx.measureText(`${trimmed}...`).width > maxWidth) {
+                trimmed = trimmed.slice(0, -1);
+            }
+            return `${trimmed}...`;
+        }
+
+        // One cell's worth of chips, in the order they appear in the CSV.
+        function cellChips(text) {
+            const raw = (text || '').trim();
+            if (!raw) return [];
+            const upper = raw.toUpperCase();
+            if (upper === 'BREAK' || upper === 'N/A') {
+                return [{label: raw, kind: 'break'}];
+            }
+            return raw.split(' / ').map(part => part.trim()).filter(Boolean).map(part => {
+                const name = extractSubjectName(part).toUpperCase();
+                if (name.startsWith('FREE')) return {label: part, kind: 'free'};
+                if (name === 'ERROR') return {label: part, kind: 'error'};
+                return {label: part, kind: 'subject', hue: getSubjectHue(extractSubjectName(part))};
+            });
+        }
+
+        function chipPalette(chip) {
+            if (chip.kind === 'break' || chip.kind === 'free') {
+                return {fill: EXPORT.headerFill, stroke: EXPORT.lineStrong, text: EXPORT.muted};
+            }
+            if (chip.kind === 'error') {
+                return {fill: '#fdebee', stroke: '#f5bcc4', text: '#d62f45'};
+            }
+            return {
+                fill: `hsl(${chip.hue} 82% 95%)`,
+                stroke: `hsl(${chip.hue} 62% 84%)`,
+                text: `hsl(${chip.hue} 58% 34%)`
+            };
+        }
+
+        function buildScheduleCanvas(scale) {
+            const rows = parseCSV(generatedCSV);
+            if (!rows.length) return null;
+
+            const header = rows[0];
+            const body = rows.slice(1);
+            const dayCount = Math.max(1, header.length - 1);
+
+            const width = EXPORT.pad * 2 + EXPORT.periodColumn + dayCount * EXPORT.dayColumn;
+
+            // Row heights follow the busiest cell in each row.
+            const rowChips = body.map(row => row.slice(1).map(cellChips));
+            const rowHeights = rowChips.map(cells => {
+                const most = Math.max(1, ...cells.map(chips => chips.length));
+                return Math.max(
+                    EXPORT.minRowHeight,
+                    EXPORT.cellPadding * 2 + most * EXPORT.chipHeight + (most - 1) * EXPORT.chipGap
+                );
+            });
+
+            const titleBlock = EXPORT.titleGap + 34;
+            const height = EXPORT.pad * 2 + titleBlock + EXPORT.headerHeight
+                + rowHeights.reduce((total, value) => total + value, 0);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(width * scale);
+            canvas.height = Math.round(height * scale);
+            const ctx = canvas.getContext('2d');
+            ctx.scale(scale, scale);
+            ctx.textBaseline = 'middle';
+
+            ctx.fillStyle = EXPORT.paper;
+            ctx.fillRect(0, 0, width, height);
+
+            // Title
+            const name = (document.getElementById('scheduleName').value || '').trim() || 'Class Schedule';
+            ctx.fillStyle = EXPORT.ink;
+            ctx.font = "700 21px 'Space Grotesk', 'Inter', system-ui, sans-serif";
+            ctx.fillText(fitText(ctx, name, width - EXPORT.pad * 2), EXPORT.pad, EXPORT.pad + 11);
+
+            ctx.fillStyle = EXPORT.muted;
+            ctx.font = "500 12.5px 'Inter', system-ui, sans-serif";
+            ctx.fillText(
+                `${dayCount}-day cycle - generated ${new Date().toLocaleDateString()}`,
+                EXPORT.pad,
+                EXPORT.pad + 32
+            );
+
+            const gridTop = EXPORT.pad + titleBlock;
+            const columnX = index => EXPORT.pad + (index === 0
+                ? 0
+                : EXPORT.periodColumn + (index - 1) * EXPORT.dayColumn);
+            const columnWidth = index => (index === 0 ? EXPORT.periodColumn : EXPORT.dayColumn);
+
+            // Header band
+            ctx.fillStyle = EXPORT.headerFill;
+            ctx.fillRect(EXPORT.pad, gridTop, width - EXPORT.pad * 2, EXPORT.headerHeight);
+            ctx.fillStyle = EXPORT.muted;
+            ctx.font = "650 11px 'Inter', system-ui, sans-serif";
+            header.forEach((cell, index) => {
+                const label = (cell || '').split('\n')[0].toUpperCase();
+                ctx.fillText(
+                    fitText(ctx, label, columnWidth(index) - 22),
+                    columnX(index) + 11,
+                    gridTop + EXPORT.headerHeight / 2
+                );
+            });
+
+            // Body
+            let y = gridTop + EXPORT.headerHeight;
+            body.forEach((row, rowIndex) => {
+                const rowHeight = rowHeights[rowIndex];
+
+                ctx.fillStyle = EXPORT.periodFill;
+                ctx.fillRect(EXPORT.pad, y, EXPORT.periodColumn, rowHeight);
+
+                const [periodName, periodTime] = (row[0] || '').split('\n');
+                ctx.fillStyle = EXPORT.ink;
+                ctx.font = "650 12.5px 'Inter', system-ui, sans-serif";
+                ctx.fillText(
+                    fitText(ctx, periodName || '', EXPORT.periodColumn - 22),
+                    EXPORT.pad + 11,
+                    y + (periodTime ? rowHeight / 2 - 9 : rowHeight / 2)
+                );
+                if (periodTime) {
+                    ctx.fillStyle = EXPORT.muted;
+                    ctx.font = "500 11px 'Inter', system-ui, sans-serif";
+                    ctx.fillText(
+                        fitText(ctx, periodTime, EXPORT.periodColumn - 22),
+                        EXPORT.pad + 11,
+                        y + rowHeight / 2 + 8
+                    );
+                }
+
+                rowChips[rowIndex].forEach((chips, dayIndex) => {
+                    const x = columnX(dayIndex + 1);
+                    let chipY = y + EXPORT.cellPadding;
+
+                    chips.forEach(chip => {
+                        const palette = chipPalette(chip);
+                        const chipWidth = EXPORT.dayColumn - 16;
+
+                        ctx.fillStyle = palette.fill;
+                        ctx.strokeStyle = palette.stroke;
+                        ctx.lineWidth = 1;
+                        ctx.setLineDash(chip.kind === 'break' ? [4, 3] : []);
+                        roundedRect(ctx, x + 8, chipY, chipWidth, EXPORT.chipHeight, 7);
+                        ctx.fill();
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+
+                        ctx.fillStyle = palette.text;
+                        ctx.font = "600 12px 'Inter', system-ui, sans-serif";
+                        ctx.fillText(
+                            fitText(ctx, chip.label, chipWidth - 18),
+                            x + 17,
+                            chipY + EXPORT.chipHeight / 2
+                        );
+                        chipY += EXPORT.chipHeight + EXPORT.chipGap;
+                    });
+                });
+
+                y += rowHeight;
+                ctx.strokeStyle = EXPORT.line;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(EXPORT.pad, y - 0.5);
+                ctx.lineTo(width - EXPORT.pad, y - 0.5);
+                ctx.stroke();
+            });
+
+            // Outline and the rule under the header
+            ctx.strokeStyle = EXPORT.lineStrong;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(EXPORT.pad, gridTop + EXPORT.headerHeight - 0.5);
+            ctx.lineTo(width - EXPORT.pad, gridTop + EXPORT.headerHeight - 0.5);
+            ctx.stroke();
+
+            ctx.strokeStyle = EXPORT.line;
+            for (let index = 1; index <= dayCount; index++) {
+                const x = columnX(index) - 0.5;
+                ctx.beginPath();
+                ctx.moveTo(x, gridTop);
+                ctx.lineTo(x, y);
+                ctx.stroke();
+            }
+
+            ctx.strokeStyle = EXPORT.lineStrong;
+            roundedRect(ctx, EXPORT.pad + 0.5, gridTop + 0.5, width - EXPORT.pad * 2 - 1, y - gridTop - 1, 10);
+            ctx.stroke();
+
+            return canvas;
+        }
+
+        function scheduleFileName(extension) {
+            const raw = (document.getElementById('scheduleName').value || '').trim() || 'class-schedule';
+            const slug = raw.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+            return `${slug || 'class-schedule'}.${extension}`;
+        }
+
+        async function downloadScheduleImage() {
+            if (!generatedCSV) return;
+
+            // Canvas can only use a webfont once it has actually loaded.
+            try {
+                if (document.fonts && document.fonts.ready) await document.fonts.ready;
+            } catch (_error) {
+                // Fall through to whatever the system font is.
+            }
+
+            const canvas = buildScheduleCanvas(2);
+            if (!canvas) return;
+
+            canvas.toBlob(blob => {
+                if (!blob) {
+                    setSaveScheduleStatus('The image could not be created in this browser.', 'error');
+                    return;
+                }
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = scheduleFileName('png');
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                URL.revokeObjectURL(url);
+            }, 'image/png');
+        }
+
+        // The print stylesheet strips everything but the timetable, so the
+        // browser's own "Save as PDF" produces a clean one-page document.
+        function printSchedule() {
+            if (!generatedCSV) return;
+            window.print();
+        }
+
         function downloadCSV() {
             if (!generatedCSV) return;
             downloadCsvText(generatedCSV, 'class_schedule.csv');
